@@ -47,3 +47,5 @@ th{color:var(--mut);font-weight:500;font-size:12px}td.pv{cursor:pointer;text-dec
 @media (max-width:1100px){.grid{grid-template-columns:1fr;grid-template-areas:"issues" "graph" "log" "quote" "sparql" "reason" "history"}}
 
 .b.fb{background:#4a1d1a;color:#ffb4ae}.fbmsg{color:#ffcf8a;font-size:12px}.banner.api{background:#3d2c0c;color:#ffcf8a}.explain{margin-top:8px;font-size:13px}.explain p{margin:4px 0}
+.hist[data-run]{cursor:pointer;border-radius:4px;padding:4px 6px}.hist[data-run]:hover,.hist[data-run]:focus{background:#1b2633;outline:1px solid #4da3ff}.hist.cur{font-weight:700}button.sm{font-size:11px;padding:1px 8px}
+[hidden]{display:none!important}
