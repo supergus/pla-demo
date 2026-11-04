@@ -3,10 +3,10 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PLA Console · RFQ-to-Quote demo</title>
 <link rel="stylesheet" href="style.css">
-<script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+<script src="vendor/vis-network.min.js"></script>
 </head><body>
 <header class="top">
-  <div class="brand">PLA Console <span class="sub">Program Lifecycle Agent · RFQ-to-Quote demo v1</span></div>
+  <div class="brand">PLA Console <span class="sub">Program Lifecycle Agent · RFQ-to-Quote demo v2</span></div>
   <div class="hdr" id="hdr" hidden>
     <span>Program <b id="h-prog">RFQ-1002</b></span>
     <span>Stage <b id="h-stage">–</b></span>
@@ -42,26 +42,31 @@
     <section class="panel graph"><h2>Live RFQ graph <span class="hint">facts added by the PLA</span></h2><div id="graph"></div></section>
     <section class="panel log"><h2>Tool-run log</h2><div id="log"></div></section>
     <section class="panel quote"><h2>Quote build-up <span class="hint">click a number for provenance</span></h2><div id="quote"><p class="muted">Not costed yet.</p></div><div id="gate"></div></section>
+    <section class="panel sparql"><h2>SPARQL competency questions <span class="b live">live</span><span class="hint">Oxigraph (WebAssembly) over the real rfq-ontology files</span></h2>
+      <div id="sparql-body"><div class="cqbar"><select id="cq-sel"></select><button class="primary" id="cq-run">Run query</button><span class="muted" id="cq-file" style="font-size:12px"></span></div>
+      <pre class="q" id="cq-text"></pre><div id="cq-out"></div></div></section>
+    <section class="panel reason"><h2>Reasoner moment <span class="hint">is RFQ-1002 a CompleteRFQ?</span></h2><div id="reasoner"></div></section>
     <section class="panel history"><h2>Run history</h2><div id="history"></div></section>
   </div>
 </main>
 
 <aside id="drawer" class="drawer" hidden><button class="x" id="drawer-x">✕</button><div id="drawer-body"></div></aside>
 <template id="about-tpl">
-  <h2>About this demo</h2>
-  <p>A live management console for one PLA run on a sample RFQ. Everything runs in your browser. There is no backend, no API key and no AI call in v1, and nothing is sent anywhere.</p>
-  <h3>Badges</h3>
+  <h2>About this demo (v2)</h2>
+  <p>A live management console for one PLA run on a sample RFQ. Everything runs in your browser. There is no backend, no API key and no AI call, and nothing is sent anywhere. The browser loads the real ontology modules, shapes, data and competency queries from <code>supergus/rfq-ontology</code> (copied into <code>data/</code>), and all libraries are served from this site (<code>vendor/</code>), not a CDN.</p>
+  <h3>What is real, replayed or canned</h3>
   <ul>
-    <li><span class="b det">deterministic</span> Plain code with the same answer every time. <code>cost_quote</code> is a live JavaScript port of <code>scripts/quote.py</code>, run in your browser.</li>
-    <li><span class="b ai">AI</span> Tools that will be LLM calls (Workers AI, Llama 3.3 70B) in a later version.</li>
-    <li><span class="b canned">canned</span> In v1 the AI tools (<code>parse_rfq_document</code>, <code>match_library_part</code>) return pre-written output. No model is called.</li>
-    <li><span class="b replay">replayed</span> <code>validate_rfq</code> shows SHACL results computed at build time with pySHACL against the repo's real shapes and RFQ-1002 data (before and after the fixes). The browser does not run SHACL in v1.</li>
+    <li><span class="b live">live</span> <b>SHACL</b>: <code>validate_rfq</code> runs <code>shapes/rfq-completeness.ttl</code> against the ontology + RFQ-1002 data in your browser with shacl-engine (N3.js parser), before and after your fix. The tool-run JSON also shows the build-time pySHACL result and whether they agree. If the browser engine fails to load, the console falls back to the pySHACL replay and badges it <span class="b replay">replayed</span>.</li>
+    <li><span class="b live">live</span> <b>SPARQL</b>: CQ1 to CQ12 run in Oxigraph (WebAssembly) against the loaded graph, which includes your fix once you make it (watch CQ1 go empty). CQ1 and CQ7 are lightly rewritten for standard SPARQL 1.1 evaluation; each file says so in a comment. CQ4 and CQ6 read <code>quote-results.ttl</code>, computed at build time by <code>scripts/quote.py</code>. CQ9 to CQ12 read the repo's sample PLA run (<code>data/pla-run-1002.ttl</code>), not the run in this console.</li>
+    <li><b>Reasoner moment</b>: <span class="b live">live</span> a SPARQL ASK that mirrors the OWL definition of <code>rfq:CompleteRFQ</code> on the asserted data; <span class="b replay">replayed</span> the HermiT result (via ROBOT, at build time, for the DAP fix), since HermiT cannot run in a browser. The <span class="b inf">inferred</span> type is shown dashed in the graph.</li>
+    <li><span class="b live">live</span> <b>Cost</b>: <code>cost_quote</code> is a JavaScript port of <code>scripts/quote.py</code>, run in your browser.</li>
+    <li><span class="b canned">canned</span> <b>AI tools</b>: <code>parse_rfq_document</code> and <code>match_library_part</code> return pre-written output; no model is called. The PLA's <code>rfq:SimilarityMatch</code> for the RFQ line (score, method) is read by SPARQL from the repo's sample run.</li>
+    <li><b>Simulated</b>: tool latency, injected failures, and "send quote".</li>
   </ul>
   <h3>Demo assumptions</h3>
   <ul>
     <li>RFQ-1002 (part BRK-200) is priced as a repeat of the BRK-100 bracket, with the same BOM, routing, rates and quantity breaks (100 / 1,000 / 10,000), so the numbers match the repo's worked example. The repo's RFQ-1002 data file has a single 500 break.</li>
     <li>Run state is saved to your browser's localStorage after every step, so a refresh resumes the run.</li>
-    <li>"Send quote" is simulated.</li>
   </ul>
   <h3>Links</h3>
   <ul>

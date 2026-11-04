@@ -20,16 +20,19 @@ main{padding:12px 18px}.controls{display:flex;gap:10px;align-items:center;margin
 .pipeline li .n{font-weight:600;text-transform:capitalize}.pipeline li .s{font-size:12px;color:var(--mut)}
 .pipeline li.running{border-top-color:var(--acc)}.pipeline li.done{border-top-color:var(--ok)}.pipeline li.failed{border-top-color:var(--bad)}.pipeline li.retrying{border-top-color:var(--warn)}.pipeline li.blocked{border-top-color:var(--warn)}
 .pipeline li.running .s::before{content:"● ";color:var(--acc);animation:p 1s infinite}@keyframes p{50%{opacity:.2}}
-.grid{display:grid;grid-template-columns:330px 1fr 1fr;grid-template-areas:"issues graph graph" "log log quote" "history history quote";gap:12px}
+.grid{display:grid;grid-template-columns:330px 1fr 1fr;grid-template-areas:"issues graph graph" "log log quote" "sparql sparql reason" "history history history";gap:12px}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-width:0}
 .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin:0 0 8px}.hint{text-transform:none;letter-spacing:0;font-weight:400;font-size:11px;margin-left:6px}
-.issues{grid-area:issues;max-height:420px;overflow:auto}.graph{grid-area:graph}#graph{height:380px}.log{grid-area:log;max-height:560px;overflow:auto}.quote{grid-area:quote}.history{grid-area:history}
+.issues{grid-area:issues;max-height:560px;overflow:auto}.graph{grid-area:graph}#graph{height:520px}.log{grid-area:log;max-height:560px;overflow:auto}.quote{grid-area:quote}.history{grid-area:history}.sparql{grid-area:sparql;min-width:0}.reason{grid-area:reason}
+.cqbar{display:flex;gap:8px;align-items:center;margin-bottom:6px}.cqbar select{max-width:70%}
+pre.q{background:#0b0f14;padding:8px;border-radius:6px;overflow:auto;max-height:220px;font-size:11px;white-space:pre}
+table.sq td,table.sq th{text-align:left;font-size:12px}#cq-out{overflow:auto;max-height:320px}table.rt td,table.rt th{text-align:left;font-size:12px}.okc{color:#93e6bd}
 .count{background:#2b3442;border-radius:10px;padding:0 7px;color:var(--fg)}
 .issue{border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:6px;padding:8px;margin-bottom:8px}.issue.resolved{border-left-color:var(--ok);opacity:.6}
 .issue .t{font-weight:600}.issue .m{font-size:12px;color:var(--mut)}.issue select,.issue button{margin-top:6px;padding:4px 8px;font-size:12px}
 .own{font-size:11px;padding:1px 6px;border-radius:8px;background:#2b3442;margin-left:4px}.own.human{background:#4a3a12;color:#ffd98a}
 .b{font-size:10px;padding:1px 6px;border-radius:8px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-right:4px}
-.b.det{background:#103842;color:var(--det)}.b.ai{background:#2e1f4d;color:var(--ai)}.b.canned{background:#3d2c0c;color:var(--canned)}.b.replay{background:#1b3346;color:#7cc0ff}
+.b.det{background:#103842;color:var(--det)}.b.ai{background:#2e1f4d;color:var(--ai)}.b.canned{background:#3d2c0c;color:var(--canned)}.b.replay{background:#1b3346;color:#7cc0ff}.b.live{background:#123d2a;color:#93e6bd}.b.inf{background:#123d2a;color:#93e6bd;border:1px dashed #3fb27f}
 .run{border:1px solid var(--line);border-radius:6px;margin-bottom:6px}.run summary{display:flex;gap:8px;align-items:center;padding:6px 8px;cursor:pointer;list-style:none}
 .run summary .nm{font-family:ui-monospace,monospace;font-weight:600}.run summary .r{margin-left:auto;color:var(--mut);font-size:12px}
 .run.ok summary{border-left:3px solid var(--ok)}.run.err summary{border-left:3px solid var(--bad)}.run.pending summary{border-left:3px solid var(--acc)}
@@ -41,4 +44,4 @@ th{color:var(--mut);font-weight:500;font-size:12px}td.pv{cursor:pointer;text-dec
 .drawer{position:fixed;right:0;top:0;bottom:0;width:440px;background:#121820;border-left:1px solid var(--line);padding:18px;overflow:auto;z-index:10;box-shadow:-10px 0 30px #0008}
 .drawer .x{float:right}.drawer h3{font-size:13px;color:var(--mut);margin-top:16px}.drawer li{margin-bottom:6px}
 .chain{border-left:2px solid var(--acc);padding-left:10px;margin:6px 0;font-size:13px}
-@media (max-width:1100px){.grid{grid-template-columns:1fr;grid-template-areas:"issues" "graph" "log" "quote" "history"}}
+@media (max-width:1100px){.grid{grid-template-columns:1fr;grid-template-areas:"issues" "graph" "log" "quote" "sparql" "reason" "history"}}

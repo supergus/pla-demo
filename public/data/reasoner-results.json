@@ -1,0 +1,18 @@
+{
+  "generated": "2026-11-04T10:14:55",
+  "engine": "HermiT via ROBOT version 1.9.11",
+  "individual": "ex:RFQ-1002",
+  "before": {
+    "types": [
+      "RFQPackage"
+    ],
+    "completeRFQ": false
+  },
+  "after": {
+    "types": [
+      "CompleteRFQ",
+      "RFQPackage"
+    ],
+    "completeRFQ": true
+  }
+}

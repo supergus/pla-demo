@@ -1,0 +1,21 @@
+{
+  "name": "rfq-demo-vendor",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "esbuild": "^0.28.2",
+    "n3": "^2.13.12",
+    "oxigraph": "^0.5.13",
+    "rdf-ext": "^2.6.0",
+    "shacl-engine": "^1.1.3",
+    "vis-network": "^9.1.9"
+  }
+}
