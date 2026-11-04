@@ -1,0 +1,9 @@
+# Q10: Classes with instance counts (asserted types only)
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX ex:   <http://pcaq.local/demo#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl:  <http://www.w3.org/2002/07/owl#>
+SELECT ?class ?label (COUNT(?i) AS ?instances) WHERE {
+  ?class a owl:Class . FILTER(isIRI(?class)) OPTIONAL { ?class rdfs:label ?label }
+  OPTIONAL { ?i a ?class }
+} GROUP BY ?class ?label ORDER BY DESC(?instances) ?class

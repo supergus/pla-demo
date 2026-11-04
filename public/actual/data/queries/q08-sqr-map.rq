@@ -1,0 +1,8 @@
+# Q8: SQR-database map: PCAQ cell -> SQR field, with mapping kind
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX ex:   <http://pcaq.local/demo#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl:  <http://www.w3.org/2002/07/owl#>
+SELECT ?sqrField ?pcaqCell ?kind WHERE {
+  ?m a pcaq:SQRMapping ; pcaq:mapsTo/rdfs:label ?sqrField ; pcaq:mapsFrom/pcaq:cellRef ?pcaqCell ; pcaq:mappingKind/rdfs:label ?kind .
+} ORDER BY ?kind ?sqrField

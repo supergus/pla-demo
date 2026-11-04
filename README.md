@@ -33,6 +33,13 @@ persistent: 4 attempts, then "Retry failed step"); run state in localStorage so 
 100 / 1,000 / 10,000), so numbers match the repo's worked example: unit 60.86 / 58.01 / 57.72, totals 8,016.00 / 60,660.00 / 587,050.00 (DAP).
 The repo data file for RFQ-1002 has a single 500 break.
 
+## PCAQ ontology viewer at `/actual/`
+`public/actual/` is the static build of the private repo **supergus/pcaq-viewer** (thin structural OWL of the PCAQ quote
+workbook + fictional demo data; no workbooks, prices, customers or CER numbers). It is served at
+https://pla.chriscouch.net/actual/ behind the same "Secret?" gate as the rest of the site (root `functions/_middleware.js`
+covers every path; `tests/actual-gated.test.mjs` checks it). The landing page links to it. Do not edit `public/actual/` by
+hand; refresh it with `tools/sync-actual.sh /path/to/pcaq-viewer` (records the source commit in `public/actual/SOURCE.txt`).
+
 ## Data and vendored libraries
 - `public/data/`: copied from rfq-ontology `ff69572` (ontology/*.ttl, data/*.ttl, shapes, queries/*.rq) plus
   `quote-results.ttl` (`scripts/quote.py --ttl`), `shacl-results.json` and `reasoner-results.json` (build-time replays).

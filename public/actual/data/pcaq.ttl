@@ -1,0 +1,249 @@
+# PCAQ ontology — thin structural draft v0.1 (PRIVATE, do not publish)
+# Derived from reverse engineering of PCAQ samples A/B/C: STRUCTURE ONLY.
+# No part numbers, prices, customers, CER numbers or plant names from the samples appear here.
+# Sheet/column traceability is kept in pcaq:sourceSheet / pcaq:sourceColumn annotations.
+
+@prefix pcaq: <http://pcaq.local/ns#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+<http://pcaq.local/ontology> a owl:Ontology ;
+    rdfs:label "PCAQ ontology (thin draft)" ;
+    rdfs:comment "Quote tree of a PCAQ workbook: Program Data -> (imported estimate / Costing_Summary) -> Parts Data cost breakdown -> Sales Price N -> Proposed!O -> Volume LTA Royalty -> yearly selling prices (Y1..Y8, SOP-relative). Plus the SQR-database field map seen in samples B/C." ;
+    owl:versionInfo "0.1.0-draft" .
+
+# ---------- annotation properties (traceability back to the workbook) ----------
+pcaq:sourceSheet a owl:AnnotationProperty ; rdfs:label "source sheet" ;
+    rdfs:comment "PCAQ worksheet the term was reverse-engineered from." .
+pcaq:sourceColumn a owl:AnnotationProperty ; rdfs:label "source column(s)" ;
+    rdfs:comment "Column letter(s) / cell on the source sheet (sample A layout unless stated)." .
+pcaq:populationMode a owl:AnnotationProperty ; rdfs:label "population mode" ;
+    rdfs:comment "How the value gets into the workbook: human, formula, pasted import, VBA-injected." .
+pcaq:openQuestion a owl:AnnotationProperty ; rdfs:label "open question" ;
+    rdfs:comment "Something we could not determine from the workbook alone (needs CER export / a human)." .
+
+# =====================================================================
+# Program level (Program Data sheet)
+# =====================================================================
+pcaq:PCAQWorkbook a owl:Class ; rdfs:subClassOf prov:Entity ;
+    rdfs:label "PCAQ workbook" ;
+    rdfs:comment "One Product Cost And Quote workbook (a quote version). Variant matters: with a Costing_Summary import layer (sample A) or plain master (B/C)." .
+
+pcaq:TemplateVariant a owl:Class ; rdfs:label "template variant" ;
+    rdfs:comment "Which flavour of the PCAQ template a workbook uses." ;
+    owl:equivalentClass [ a owl:Class ; owl:oneOf ( pcaq:CostingSummaryVariant pcaq:PlainMasterVariant ) ] .
+pcaq:CostingSummaryVariant a pcaq:TemplateVariant ; rdfs:label "Costing_Summary variant" ;
+    rdfs:comment "Template with Costing_Summary (Tbl_CostingSummary), BOM_Summary, Process_export, Volume_export (sample A)." .
+pcaq:PlainMasterVariant a pcaq:TemplateVariant ; rdfs:label "plain master variant" ;
+    rdfs:comment "Plain master: costs keyed into Parts Data; has SQR-database and Global_Consolidated sheets (samples B/C)." .
+
+pcaq:Program a owl:Class ; rdfs:label "program" ;
+    rdfs:comment "The customer program being quoted (Program Data header)." ; pcaq:sourceSheet "Program Data" .
+pcaq:Customer a owl:Class ; rdfs:label "customer" .
+pcaq:Region a owl:Class ; rdfs:label "region" ; pcaq:sourceSheet "Tables" ; pcaq:sourceColumn "REGIONS_DATA" .
+pcaq:Plant a owl:Class ; rdfs:label "plant" ;
+    rdfs:comment "Manufacturing location (Program Data plants; Costing_Summary C; Parts Data plant column)." ; pcaq:sourceSheet "Tables" .
+pcaq:TaxEntity a owl:Class ; rdfs:label "tax entity" ;
+    rdfs:comment "Legal/tax entity that books sales and cost; drives hidden Sales&CostEnt1-6 / CashFlow Ent1-6 engines." ;
+    pcaq:sourceSheet "Tables" , "Summary by Tax Entity" .
+pcaq:Currency a owl:Class ; rdfs:label "currency" .
+pcaq:ProductType a owl:Class ; rdfs:label "product type (section)" ;
+    rdfs:comment "Parts Data product-type block (PartsData_ProductType1/2; Costing_Summary Z 'Parts-Data Section')." ;
+    pcaq:sourceColumn "Costing_Summary!Z" .
+pcaq:ProductSubCategory a owl:Class ; rdfs:label "product sub category" ; pcaq:sourceColumn "Costing_Summary!AK" .
+
+pcaq:ofProgram a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "of program" ;
+    rdfs:domain pcaq:PCAQWorkbook ; rdfs:range pcaq:Program .
+pcaq:templateVariant a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "template variant" ;
+    rdfs:domain pcaq:PCAQWorkbook ; rdfs:range pcaq:TemplateVariant .
+pcaq:forCustomer a owl:ObjectProperty ; rdfs:label "for customer" ; rdfs:domain pcaq:Program ; rdfs:range pcaq:Customer .
+pcaq:quoteCurrency a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "quote currency" ; rdfs:domain pcaq:Program ; rdfs:range pcaq:Currency .
+pcaq:usesPlant a owl:ObjectProperty ; rdfs:label "uses plant" ; rdfs:domain pcaq:Program ; rdfs:range pcaq:Plant .
+pcaq:inRegion a owl:ObjectProperty ; rdfs:label "in region" ; rdfs:domain pcaq:Plant ; rdfs:range pcaq:Region .
+pcaq:ownedByTaxEntity a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "owned by tax entity" ; rdfs:domain pcaq:Plant ; rdfs:range pcaq:TaxEntity .
+pcaq:sopDate a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "SOP date" ;
+    rdfs:comment "Start of production. Year index 1 = first 12 months from SOP." ; rdfs:domain pcaq:Program ; rdfs:range xsd:date .
+pcaq:programLifeYears a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "program life (years)" ; rdfs:domain pcaq:Program ; rdfs:range xsd:integer .
+pcaq:currencyCode a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "currency code" ; rdfs:domain pcaq:Currency ; rdfs:range xsd:string .
+
+# Economic assumptions (Parts Data rows 3-8, impact row 14)
+pcaq:EconomicAssumption a owl:Class ; rdfs:label "economic assumption" ;
+    rdfs:comment "Per-year inflation / productivity rate that drives the COST side (not selling price)." ;
+    pcaq:sourceSheet "Parts Data" ; pcaq:sourceColumn "S3:S8, impact row 14" .
+pcaq:hasEconomicAssumption a owl:ObjectProperty ; rdfs:domain pcaq:Program ; rdfs:range pcaq:EconomicAssumption ; rdfs:label "has economic assumption" .
+pcaq:appliesToCostElement a owl:ObjectProperty ; rdfs:label "applies to cost element type" ; rdfs:domain pcaq:EconomicAssumption ; rdfs:range owl:Class .
+pcaq:inflationRate a owl:DatatypeProperty ; rdfs:label "inflation rate" ; rdfs:domain pcaq:EconomicAssumption ; rdfs:range xsd:decimal .
+pcaq:productivityRate a owl:DatatypeProperty ; rdfs:label "productivity rate" ; rdfs:domain pcaq:EconomicAssumption ; rdfs:range xsd:decimal .
+
+# =====================================================================
+# Part lines (Parts Data rows; RFQ lines)
+# =====================================================================
+pcaq:Part a owl:Class ; rdfs:label "part" ; rdfs:comment "A part number being quoted." .
+pcaq:PartLine a owl:Class ; rdfs:label "part line (RFQ line)" ;
+    rdfs:comment "One Parts Data row inside a product-type section: the unit of costing and pricing." ;
+    pcaq:sourceSheet "Parts Data" ; pcaq:sourceColumn "rows 15-45 / 55-85" .
+
+pcaq:inWorkbook a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "in workbook" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:PCAQWorkbook .
+pcaq:forPart a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "for part" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:Part .
+pcaq:inProductType a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "in product type" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:ProductType .
+pcaq:inSubCategory a owl:ObjectProperty ; rdfs:label "in sub category" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:ProductSubCategory .
+pcaq:madeAtPlant a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "made at plant" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:Plant .
+pcaq:rfqNumber a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "RFQ #" ; rdfs:domain pcaq:PartLine ; rdfs:range xsd:string ; pcaq:sourceColumn "Parts Data!C" .
+pcaq:partNumber a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "part number" ; rdfs:domain pcaq:Part ; rdfs:range xsd:string .
+pcaq:averageAnnualVolume a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "average annual volume" ;
+    rdfs:domain pcaq:PartLine ; rdfs:range xsd:decimal ; pcaq:sourceColumn "Costing_Summary!F" .
+pcaq:rosTarget a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "ROS % target" ;
+    rdfs:comment "Return-on-sales target used for the markup when no override price is set." ;
+    rdfs:domain pcaq:PartLine ; rdfs:range xsd:decimal ; pcaq:populationMode "human" .
+
+pcaq:YearVolume a owl:Class ; rdfs:label "year volume" ; rdfs:comment "Forecast volume for one SOP-relative year." ; pcaq:sourceSheet "Volume LTA Royalty" , "Volume_export" .
+pcaq:hasYearVolume a owl:ObjectProperty ; rdfs:label "has year volume" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:YearVolume .
+pcaq:volume a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "volume" ; rdfs:domain pcaq:YearVolume ; rdfs:range xsd:decimal .
+
+pcaq:yearIndex a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "year index" ;
+    rdfs:comment "SOP-relative year 1..8 (Y1 = first 12 months from SOP), NOT a calendar year." ; rdfs:range xsd:integer .
+
+# =====================================================================
+# Imported estimate (CER) — provenance UNKNOWN
+# =====================================================================
+pcaq:ImportedEstimateSource a owl:Class ; rdfs:subClassOf prov:Entity ;
+    rdfs:label "imported estimate source" ;
+    rdfs:comment "Upstream cost-estimating system/export that produced the costs pasted into PCAQ (CER / estimate dump). STUB: system unknown (SAP CO-PC standard cost? standalone estimating tool?)." ;
+    pcaq:openQuestion "Which system/report produces Costing_Summary A-Y; exact export columns and order." .
+pcaq:provenanceStatus a owl:DatatypeProperty ; rdfs:label "provenance status" ; rdfs:domain pcaq:ImportedEstimateSource ; rdfs:range xsd:string ;
+    rdfs:comment "'unknown' until the CER export note arrives." .
+
+pcaq:CostEstimateRequest a owl:Class ; rdfs:subClassOf prov:Entity ; rdfs:label "cost estimate request (CER)" ;
+    rdfs:comment "Request id that keys a PCAQ quote in the estimating system (CER #)." ; pcaq:sourceColumn "Costing_Summary!A" .
+pcaq:CostEstimate a owl:Class ; rdfs:subClassOf prov:Entity ; rdfs:label "cost estimate (Costing_Summary row)" ;
+    rdfs:comment "One per-part estimate imported from the estimating system (Estimate #). In variant A it is a Costing_Summary row; in B/C the same numbers are keyed straight into Parts Data." ;
+    pcaq:sourceSheet "Costing_Summary" ; pcaq:sourceColumn "A:Y (pasted values)" ; pcaq:populationMode "pasted import" .
+
+pcaq:cerNumber a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "CER #" ; rdfs:domain pcaq:CostEstimateRequest ; rdfs:range xsd:string .
+pcaq:estimateNumber a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "estimate #" ; rdfs:domain pcaq:CostEstimate ; rdfs:range xsd:string ; pcaq:sourceColumn "Costing_Summary!B" .
+pcaq:partOfRequest a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "part of request" ; rdfs:domain pcaq:CostEstimate ; rdfs:range pcaq:CostEstimateRequest .
+pcaq:importedFrom a owl:ObjectProperty ; rdfs:subPropertyOf prov:wasDerivedFrom ; rdfs:label "imported from" ;
+    rdfs:domain pcaq:CostEstimate ; rdfs:range pcaq:ImportedEstimateSource .
+pcaq:hasEstimate a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "has estimate" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:CostEstimate .
+pcaq:costEntryMode a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "cost entry mode" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:CostEntryMode .
+
+pcaq:CostEntryMode a owl:Class ; rdfs:label "cost entry mode" ;
+    rdfs:comment "How estimate numbers reached Parts Data cost columns." ;
+    owl:equivalentClass [ a owl:Class ; owl:oneOf ( pcaq:ViaCostingSummary pcaq:HandTypedArithmetic pcaq:StaticValues ) ] .
+pcaq:ViaCostingSummary a pcaq:CostEntryMode ; rdfs:label "formula into Costing_Summary (A)" .
+pcaq:HandTypedArithmetic a pcaq:CostEntryMode ; rdfs:label "hand-typed arithmetic (B)" .
+pcaq:StaticValues a pcaq:CostEntryMode ; rdfs:label "static pasted values (C)" .
+
+# =====================================================================
+# Cost breakdown (Parts Data Q..Y, fed by Costing_Summary)
+# =====================================================================
+pcaq:CostBreakdown a owl:Class ; rdfs:label "cost breakdown" ;
+    rdfs:comment "Per-piece cost decomposition for a part line (base year)." ; pcaq:sourceSheet "Parts Data" ; pcaq:sourceColumn "Q:Y" .
+pcaq:hasCostBreakdown a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "has cost breakdown" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:CostBreakdown .
+pcaq:hasCostElement a owl:ObjectProperty ; rdfs:label "has cost element" ; rdfs:domain pcaq:CostBreakdown ; rdfs:range pcaq:CostElement .
+pcaq:amount a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "amount (per piece, quote currency)" ; rdfs:range xsd:decimal .
+pcaq:derivedFromEstimateColumn a owl:DatatypeProperty ; rdfs:label "derived from estimate column" ; rdfs:domain pcaq:CostElement ; rdfs:range xsd:string .
+
+pcaq:CostElement a owl:Class ; rdfs:label "cost element" ; rdfs:comment "One per-piece cost bucket." .
+pcaq:ConversionCost a owl:Class ; rdfs:subClassOf pcaq:CostElement ; rdfs:label "conversion cost" ; rdfs:comment "Labour + overhead." .
+pcaq:MaterialCost a owl:Class ; rdfs:subClassOf pcaq:CostElement ; rdfs:label "material cost" .
+
+pcaq:PurchasedMaterialCost a owl:Class ; rdfs:subClassOf pcaq:MaterialCost ; rdfs:label "purchased material" ;
+    pcaq:sourceColumn "Parts Data!Q = CS!G + O - K - L - M (+ impact deltas)" .
+pcaq:ManufacturedMaterialCost a owl:Class ; rdfs:subClassOf pcaq:MaterialCost ; rdfs:label "manufactured material" ; pcaq:sourceColumn "Parts Data!R = CS!J" .
+pcaq:DirectLaborCost a owl:Class ; rdfs:subClassOf pcaq:ConversionCost ; rdfs:label "direct labour" ; pcaq:sourceColumn "Parts Data!T = CS!U + K (+ deltas)" .
+pcaq:VariableOverheadCost a owl:Class ; rdfs:subClassOf pcaq:ConversionCost ; rdfs:label "variable overhead (VOH)" ; pcaq:sourceColumn "Parts Data!U = CS!V + L (+ deltas)" .
+pcaq:FixedOverheadCost a owl:Class ; rdfs:subClassOf pcaq:ConversionCost ; rdfs:label "fixed overhead (FOH)" ; pcaq:sourceColumn "Parts Data!V = CS!W + M (+ deltas)" .
+pcaq:ScrapCost a owl:Class ; rdfs:subClassOf pcaq:CostElement ; rdfs:label "scrap" ; pcaq:sourceColumn "Parts Data!W = CS!P (+ deltas)" .
+pcaq:InboundFreightCost a owl:Class ; rdfs:subClassOf pcaq:CostElement ; rdfs:label "inbound freight" ;
+    rdfs:comment "Folded into Purchased in Parts Data!Q." ; pcaq:sourceColumn "CS!O" .
+pcaq:PackagingCost a owl:Class ; rdfs:subClassOf pcaq:CostElement ; rdfs:label "packaging" ; pcaq:sourceColumn "CS!R; Parts Data!Z?" ;
+    pcaq:openQuestion "CS!R not referenced by Parts Data; where does Parts Data packaging come from?" .
+pcaq:SurchargeCost a owl:Class ; rdfs:subClassOf pcaq:MaterialCost ; rdfs:label "surcharge" ;
+    pcaq:openQuestion "Alloy (CS!H) / Other (CS!I) surcharges unused by Parts Data cost cols (I appears in override price M)." .
+pcaq:IntercompanyChargeCost a owl:Class ; rdfs:subClassOf pcaq:CostElement ; rdfs:label "ICC (intercompany charge?)" ; pcaq:sourceColumn "CS!N" ;
+    pcaq:openQuestion "Meaning of ICC; unused by Parts Data." .
+pcaq:SetupCost a owl:Class ; rdfs:subClassOf pcaq:CostElement ; rdfs:label "setup" ; pcaq:sourceColumn "CS!T" .
+pcaq:MiscellaneousCost a owl:Class ; rdfs:subClassOf pcaq:CostElement ; rdfs:label "miscellaneous" ; pcaq:sourceColumn "CS!S" .
+pcaq:ToolingCost a owl:Class ; rdfs:subClassOf pcaq:CostElement ; rdfs:label "tooling (total, not per piece)" ; pcaq:sourceColumn "CS!Y" .
+
+pcaq:CostRollup a owl:Class ; rdfs:subClassOf pcaq:CostElement ; rdfs:label "cost rollup" ; rdfs:comment "Computed subtotal (formula)." ; pcaq:populationMode "formula" .
+pcaq:VCMCost a owl:Class ; rdfs:subClassOf pcaq:CostRollup ; rdfs:label "VCM cost" ; rdfs:comment "Variable cost: purchased + manuf material + labour + VOH + scrap." ; pcaq:sourceColumn "Parts Data!X = Q+R+T+U+W" .
+pcaq:ManufacturingCost a owl:Class ; rdfs:subClassOf pcaq:CostRollup ; rdfs:label "manufacturing cost" ; rdfs:comment "VCM + fixed OH." ; pcaq:sourceColumn "Parts Data!Y = X+V" .
+pcaq:TotalBOMCost a owl:Class ; rdfs:subClassOf pcaq:CostRollup ; rdfs:label "total BOM cost (estimate checksum)" ; pcaq:sourceColumn "CS!Q" ;
+    pcaq:openQuestion "Is CS!Q exactly G..P?" .
+pcaq:TotalFactoryCost a owl:Class ; rdfs:subClassOf pcaq:CostRollup ; rdfs:label "total factory cost (estimate checksum)" ; pcaq:sourceColumn "CS!X" .
+
+pcaq:CostImpactInitiative a owl:Class ; rdfs:label "cost impact initiative" ;
+    rdfs:comment "Local cost-reduction / inflation delta column (Costing_Summary AN:DN) added into Parts Data Q/T/U/V/W/M, factored from PC Summary row 4." ;
+    pcaq:sourceColumn "Costing_Summary!AN:DN" ; pcaq:populationMode "formula" .
+pcaq:adjustedBy a owl:ObjectProperty ; rdfs:label "adjusted by" ; rdfs:domain pcaq:CostElement ; rdfs:range pcaq:CostImpactInitiative .
+
+# =====================================================================
+# Selling price
+# =====================================================================
+pcaq:SellingPrice a owl:Class ; rdfs:label "selling price" ; rdfs:comment "Per-piece selling price in quote currency." .
+pcaq:BaseSellingPrice a owl:Class ; rdfs:subClassOf pcaq:SellingPrice ; rdfs:label "base sales price (N)" ;
+    rdfs:comment "Parts Data!N = override M if > 0 else ROS%-based markup on costs. Copied to Proposed!O." ;
+    pcaq:sourceColumn "Parts Data!N ; Proposed!O" ; pcaq:populationMode "formula" .
+pcaq:PriceOverride a owl:Class ; rdfs:subClassOf pcaq:SellingPrice ; rdfs:label "sales price override (M)" ;
+    pcaq:sourceColumn "Parts Data!M" ; pcaq:populationMode "human (or formula from CS!I+BK-BV in variant A)" .
+pcaq:YearPrice a owl:Class ; rdfs:subClassOf pcaq:SellingPrice ; rdfs:label "year selling price" ;
+    rdfs:comment "Selling price after cumulative LTA for one SOP-relative year." ;
+    pcaq:sourceColumn "Parts Data!AT,BA,BH,BO,BV,CC,CJ,CQ (Y1..Y8) <- Volume LTA Royalty!CR,CV,CZ,DD,DH,DL,DP,DT x Proposed!M7" .
+
+pcaq:hasBasePrice a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "has base price" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:BaseSellingPrice .
+pcaq:hasOverride a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "has override" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:PriceOverride .
+pcaq:hasYearPrice a owl:ObjectProperty ; rdfs:label "has year price" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:YearPrice .
+pcaq:afterLTAStep a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "after LTA step" ; rdfs:domain pcaq:YearPrice ; rdfs:range pcaq:LTAStep .
+
+pcaq:purchasedCarveOut a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "purchased carve-out (AJ)" ;
+    rdfs:comment "Per-piece purchased-component value excluded from LTA reductions (pass-through)." ;
+    rdfs:domain pcaq:PartLine ; rdfs:range xsd:decimal ; pcaq:sourceColumn "Parts Data!AJ" .
+
+pcaq:FXConversion a owl:Class ; rdfs:label "FX conversion" ;
+    rdfs:comment "Proposed!M7 factor between sheet currency and program currency (1 when equal)." ; pcaq:sourceColumn "Proposed!M7" .
+pcaq:hasFX a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "has FX" ; rdfs:domain pcaq:PCAQWorkbook ; rdfs:range pcaq:FXConversion .
+pcaq:fxFactor a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "FX factor" ; rdfs:domain pcaq:FXConversion ; rdfs:range xsd:decimal .
+
+# =====================================================================
+# LTA (Volume LTA Royalty)
+# =====================================================================
+pcaq:LTASchedule a owl:Class ; rdfs:label "LTA schedule" ;
+    rdfs:comment "Customer long-term-agreement price-down schedule for a part line: LTA % per year Y2..Y8 applied to value-add only (price minus purchased carve-out), compounding." ;
+    pcaq:sourceSheet "Volume LTA Royalty" ; pcaq:sourceColumn "Q:W" .
+pcaq:LTAStep a owl:Class ; rdfs:label "LTA step" ;
+    rdfs:comment "One year's LTA rate. price_y = (price_{y-1} - carveOut/FX) * (1 - rate) + carveOut/FX." .
+pcaq:LTASource a owl:Class ; rdfs:label "LTA source" ;
+    owl:equivalentClass [ a owl:Class ; owl:oneOf ( pcaq:ManualLTA pcaq:VolumeExportPivotLTA ) ] .
+pcaq:ManualLTA a pcaq:LTASource ; rdfs:label "typed on Volume LTA Royalty" .
+pcaq:VolumeExportPivotLTA a pcaq:LTASource ; rdfs:label "GETPIVOTDATA from Volume_export" .
+
+pcaq:hasLTASchedule a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "has LTA schedule" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:LTASchedule .
+pcaq:hasLTAStep a owl:ObjectProperty ; rdfs:label "has LTA step" ; rdfs:domain pcaq:LTASchedule ; rdfs:range pcaq:LTAStep .
+pcaq:ltaRate a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "LTA rate" ; rdfs:comment "Fraction (0.013 = 1.3%)." ; rdfs:domain pcaq:LTAStep ; rdfs:range xsd:decimal .
+pcaq:ltaSource a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "LTA source" ; rdfs:domain pcaq:LTAStep ; rdfs:range pcaq:LTASource .
+pcaq:programWeightedLTA a owl:DatatypeProperty ; rdfs:label "program weighted LTA %" ;
+    rdfs:comment "Volume LTA Royalty row 46: SUMPRODUCT(sales, lta%)/total sales per year (shown on PC Summary)." ; rdfs:domain pcaq:Program ; rdfs:range xsd:decimal .
+
+# =====================================================================
+# SQR mapping stubs (SQR-database sheet, samples B/C)
+# =====================================================================
+pcaq:SQRField a owl:Class ; rdfs:label "SQR field" ;
+    rdfs:comment "Field in the downstream Sales Quote Request system (e.g. Type of Request, Region, SOP, Currency, VCM, IRR, NPV, ROIC, payback, LTA proposal)." ;
+    pcaq:sourceSheet "SQR-database" ; pcaq:openQuestion "Confirm SQR is the system PCAQ feeds." .
+pcaq:PCAQField a owl:Class ; rdfs:label "PCAQ field (cell)" ; rdfs:comment "A PCAQ source cell referenced by the SQR map." .
+pcaq:SQRMapping a owl:Class ; rdfs:label "SQR mapping" ; rdfs:comment "One row of SQR-database: PCAQ cell -> SQR field, with mapping kind." .
+pcaq:MappingKind a owl:Class ; rdfs:label "mapping kind" ;
+    owl:equivalentClass [ a owl:Class ; owl:oneOf ( pcaq:SystemMapped pcaq:ManualEntry pcaq:NotInPCAQ ) ] .
+pcaq:SystemMapped a pcaq:MappingKind ; rdfs:label "System" .
+pcaq:ManualEntry a pcaq:MappingKind ; rdfs:label "Manual" .
+pcaq:NotInPCAQ a pcaq:MappingKind ; rdfs:label "not in PCAQ" .
+pcaq:mapsFrom a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "maps from" ; rdfs:domain pcaq:SQRMapping ; rdfs:range pcaq:PCAQField .
+pcaq:mapsTo a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "maps to" ; rdfs:domain pcaq:SQRMapping ; rdfs:range pcaq:SQRField .
+pcaq:mappingKind a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "mapping kind" ; rdfs:domain pcaq:SQRMapping ; rdfs:range pcaq:MappingKind .
+pcaq:cellRef a owl:DatatypeProperty ; rdfs:label "cell reference" ; rdfs:domain pcaq:PCAQField ; rdfs:range xsd:string .

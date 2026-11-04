@@ -1,0 +1,11 @@
+# Q6: Where did each line's costs come from? (entry mode, estimate, upstream source + provenance status)
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX ex:   <http://pcaq.local/demo#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl:  <http://www.w3.org/2002/07/owl#>
+SELECT ?line ?mode ?estimate ?cer ?source ?provenance WHERE {
+  ?line a pcaq:PartLine ; pcaq:costEntryMode/rdfs:label ?mode .
+  OPTIONAL { ?line pcaq:hasEstimate ?estimate .
+    OPTIONAL { ?estimate pcaq:partOfRequest/pcaq:cerNumber ?cer }
+    OPTIONAL { ?estimate pcaq:importedFrom ?source . ?source pcaq:provenanceStatus ?provenance } }
+} ORDER BY ?line

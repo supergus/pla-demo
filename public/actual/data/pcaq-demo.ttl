@@ -1,0 +1,184 @@
+# FICTIONAL demo instances for the PCAQ viewer. Invented numbers/names — NOT from any PCAQ sample.
+@prefix pcaq: <http://pcaq.local/ns#> .
+@prefix ex:   <http://pcaq.local/demo#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+ex:Customer-Acme a pcaq:Customer ; rdfs:label "Acme Motors (fictional)" .
+ex:USD a pcaq:Currency ; rdfs:label "US dollar" ; pcaq:currencyCode "USD" .
+ex:Region-NA a pcaq:Region ; rdfs:label "North America" .
+ex:TaxEntity-DemoUS a pcaq:TaxEntity ; rdfs:label "DemoCo US LLC (fictional)" .
+ex:TaxEntity-DemoMX a pcaq:TaxEntity ; rdfs:label "DemoCo MX (fictional)" .
+ex:PlantNorth a pcaq:Plant ; rdfs:label "Plant North" ; pcaq:inRegion ex:Region-NA ; pcaq:ownedByTaxEntity ex:TaxEntity-DemoUS .
+ex:PlantSouth a pcaq:Plant ; rdfs:label "Plant South" ; pcaq:inRegion ex:Region-NA ; pcaq:ownedByTaxEntity ex:TaxEntity-DemoMX .
+ex:PT-Hoses a pcaq:ProductType ; rdfs:label "Section 1: hoses" .
+ex:PT-Connectors a pcaq:ProductType ; rdfs:label "Section 2: connectors" .
+
+ex:Program-Falcon a pcaq:Program ; rdfs:label "Program Falcon (fictional)" ;
+    pcaq:forCustomer ex:Customer-Acme ; pcaq:quoteCurrency ex:USD ; pcaq:usesPlant ex:PlantNorth , ex:PlantSouth ;
+    pcaq:sopDate "2028-01-01"^^xsd:date ; pcaq:programLifeYears 3 ;
+    pcaq:hasEconomicAssumption ex:Econ-Material , ex:Econ-Labour .
+ex:Econ-Material a pcaq:EconomicAssumption ; rdfs:label "Material inflation vs productivity" ;
+    pcaq:appliesToCostElement pcaq:MaterialCost ; pcaq:inflationRate 0.03 ; pcaq:productivityRate 0.01 .
+ex:Econ-Labour a pcaq:EconomicAssumption ; rdfs:label "Labour inflation vs productivity" ;
+    pcaq:appliesToCostElement pcaq:DirectLaborCost ; pcaq:inflationRate 0.04 ; pcaq:productivityRate 0.02 .
+
+ex:WB-Falcon-v1 a pcaq:PCAQWorkbook ; rdfs:label "PCAQ Falcon v1 (fictional)" ;
+    pcaq:ofProgram ex:Program-Falcon ; pcaq:templateVariant pcaq:CostingSummaryVariant ; pcaq:hasFX ex:FX-1 .
+ex:FX-1 a pcaq:FXConversion ; rdfs:label "Proposed!M7 = 1 (same currency)" ; pcaq:fxFactor 1.0 .
+
+ex:EstimateSource-Unknown a pcaq:ImportedEstimateSource ; rdfs:label "CER / estimate export (system unknown)" ;
+    pcaq:provenanceStatus "unknown" .
+ex:CER-DEMO-0001 a pcaq:CostEstimateRequest ; rdfs:label "CER DEMO-0001 (fictional)" ; pcaq:cerNumber "DEMO-0001" .
+ex:Init-LineSpeed a pcaq:CostImpactInitiative ; rdfs:label "Line speed improvement (fictional)" .
+
+ex:Part-P-001 a pcaq:Part ; rdfs:label "Demo hose assembly" ; pcaq:partNumber "P-001" .
+ex:Line-P-001 a pcaq:PartLine ; rdfs:label "Line 1: Demo hose assembly" ; pcaq:inWorkbook ex:WB-Falcon-v1 ; pcaq:forPart ex:Part-P-001 ;
+    pcaq:inProductType ex:PT-Hoses ; pcaq:madeAtPlant ex:PlantNorth ; pcaq:rfqNumber "RFQ-DEMO-001" ;
+    pcaq:averageAnnualVolume 120000 ; pcaq:rosTarget 0.08 ; pcaq:costEntryMode pcaq:ViaCostingSummary ; pcaq:purchasedCarveOut 1.50 ;
+    pcaq:hasCostBreakdown ex:CB-P-001 ; pcaq:hasBasePrice ex:Base-P-001 ; pcaq:hasLTASchedule ex:LTA-P-001 ;
+    pcaq:hasYearPrice ex:YP-P-001-Y1 , ex:YP-P-001-Y2 , ex:YP-P-001-Y3 ;
+    pcaq:hasYearVolume ex:YV-P-001-Y1 , ex:YV-P-001-Y2 , ex:YV-P-001-Y3 ;
+    pcaq:hasEstimate ex:Est-P-001 .
+ex:Est-P-001 a pcaq:CostEstimate ; rdfs:label "Estimate DEMO-P-001" ; pcaq:estimateNumber "EST-DEMO-001" ;
+    pcaq:partOfRequest ex:CER-DEMO-0001 ; pcaq:importedFrom ex:EstimateSource-Unknown .
+ex:CE-P-001-PurchasedMaterial a pcaq:PurchasedMaterialCost ; rdfs:label "PurchasedMaterial P-001" ; pcaq:amount 4.10 ; pcaq:derivedFromEstimateColumn "CS!G+O-K-L-M" .
+ex:CE-P-001-ManufacturedMaterial a pcaq:ManufacturedMaterialCost ; rdfs:label "ManufacturedMaterial P-001" ; pcaq:amount 1.20 ; pcaq:derivedFromEstimateColumn "CS!J" .
+ex:CE-P-001-DirectLabor a pcaq:DirectLaborCost ; rdfs:label "DirectLabor P-001" ; pcaq:amount 0.85 ; pcaq:derivedFromEstimateColumn "CS!U+K" ; pcaq:adjustedBy ex:Init-LineSpeed .
+ex:CE-P-001-VariableOverhead a pcaq:VariableOverheadCost ; rdfs:label "VariableOverhead P-001" ; pcaq:amount 0.40 ; pcaq:derivedFromEstimateColumn "CS!V+L" .
+ex:CE-P-001-FixedOverhead a pcaq:FixedOverheadCost ; rdfs:label "FixedOverhead P-001" ; pcaq:amount 0.35 ; pcaq:derivedFromEstimateColumn "CS!W+M" .
+ex:CE-P-001-Scrap a pcaq:ScrapCost ; rdfs:label "Scrap P-001" ; pcaq:amount 0.12 ; pcaq:derivedFromEstimateColumn "CS!P" .
+ex:CE-P-001-InboundFreight a pcaq:InboundFreightCost ; rdfs:label "InboundFreight P-001" ; pcaq:amount 0.08 ; pcaq:derivedFromEstimateColumn "CS!O" .
+ex:CE-P-001-VCM a pcaq:VCMCost ; rdfs:label "VCM P-001" ; pcaq:amount 6.67 .
+ex:CE-P-001-Mfg a pcaq:ManufacturingCost ; rdfs:label "Mfg cost P-001" ; pcaq:amount 7.02 .
+ex:CB-P-001 a pcaq:CostBreakdown ; rdfs:label "Cost breakdown P-001" ;
+    pcaq:hasCostElement ex:CE-P-001-PurchasedMaterial , ex:CE-P-001-ManufacturedMaterial , ex:CE-P-001-DirectLabor , ex:CE-P-001-VariableOverhead , ex:CE-P-001-FixedOverhead , ex:CE-P-001-Scrap , ex:CE-P-001-InboundFreight , ex:CE-P-001-VCM , ex:CE-P-001-Mfg .
+ex:Base-P-001 a pcaq:BaseSellingPrice ; rdfs:label "Base price N P-001" ; pcaq:amount 7.6304 .
+ex:LTA-P-001 a pcaq:LTASchedule ; rdfs:label "LTA schedule P-001" ; pcaq:hasLTAStep ex:LTA-P-001-Y2 , ex:LTA-P-001-Y3 .
+ex:YP-P-001-Y1 a pcaq:YearPrice ; rdfs:label "P-001 Y1" ; pcaq:yearIndex 1 ; pcaq:amount 7.6304 .
+ex:LTA-P-001-Y2 a pcaq:LTAStep ; rdfs:label "P-001 LTA Y2" ; pcaq:yearIndex 2 ; pcaq:ltaRate 0.015 ; pcaq:ltaSource pcaq:ManualLTA .
+ex:YP-P-001-Y2 a pcaq:YearPrice ; rdfs:label "P-001 Y2" ; pcaq:yearIndex 2 ; pcaq:amount 7.5384 ; pcaq:afterLTAStep ex:LTA-P-001-Y2 .
+ex:LTA-P-001-Y3 a pcaq:LTAStep ; rdfs:label "P-001 LTA Y3" ; pcaq:yearIndex 3 ; pcaq:ltaRate 0.015 ; pcaq:ltaSource pcaq:ManualLTA .
+ex:YP-P-001-Y3 a pcaq:YearPrice ; rdfs:label "P-001 Y3" ; pcaq:yearIndex 3 ; pcaq:amount 7.4479 ; pcaq:afterLTAStep ex:LTA-P-001-Y3 .
+ex:YV-P-001-Y1 a pcaq:YearVolume ; rdfs:label "P-001 vol Y1" ; pcaq:yearIndex 1 ; pcaq:volume 120000 .
+ex:YV-P-001-Y2 a pcaq:YearVolume ; rdfs:label "P-001 vol Y2" ; pcaq:yearIndex 2 ; pcaq:volume 126000 .
+ex:YV-P-001-Y3 a pcaq:YearVolume ; rdfs:label "P-001 vol Y3" ; pcaq:yearIndex 3 ; pcaq:volume 122400 .
+
+ex:Part-P-002 a pcaq:Part ; rdfs:label "Demo bracket" ; pcaq:partNumber "P-002" .
+ex:Line-P-002 a pcaq:PartLine ; rdfs:label "Line 2: Demo bracket" ; pcaq:inWorkbook ex:WB-Falcon-v1 ; pcaq:forPart ex:Part-P-002 ;
+    pcaq:inProductType ex:PT-Hoses ; pcaq:madeAtPlant ex:PlantNorth ; pcaq:rfqNumber "RFQ-DEMO-002" ;
+    pcaq:averageAnnualVolume 80000 ; pcaq:rosTarget 0.10 ; pcaq:costEntryMode pcaq:ViaCostingSummary ; pcaq:purchasedCarveOut 0.00 ;
+    pcaq:hasCostBreakdown ex:CB-P-002 ; pcaq:hasBasePrice ex:Base-P-002 ; pcaq:hasLTASchedule ex:LTA-P-002 ;
+    pcaq:hasYearPrice ex:YP-P-002-Y1 , ex:YP-P-002-Y2 , ex:YP-P-002-Y3 ;
+    pcaq:hasYearVolume ex:YV-P-002-Y1 , ex:YV-P-002-Y2 , ex:YV-P-002-Y3 ;
+    pcaq:hasEstimate ex:Est-P-002 .
+ex:Est-P-002 a pcaq:CostEstimate ; rdfs:label "Estimate DEMO-P-002" ; pcaq:estimateNumber "EST-DEMO-002" ;
+    pcaq:partOfRequest ex:CER-DEMO-0001 ; pcaq:importedFrom ex:EstimateSource-Unknown .
+ex:CE-P-002-PurchasedMaterial a pcaq:PurchasedMaterialCost ; rdfs:label "PurchasedMaterial P-002" ; pcaq:amount 1.05 ; pcaq:derivedFromEstimateColumn "CS!G+O-K-L-M" .
+ex:CE-P-002-ManufacturedMaterial a pcaq:ManufacturedMaterialCost ; rdfs:label "ManufacturedMaterial P-002" ; pcaq:amount 0.60 ; pcaq:derivedFromEstimateColumn "CS!J" .
+ex:CE-P-002-DirectLabor a pcaq:DirectLaborCost ; rdfs:label "DirectLabor P-002" ; pcaq:amount 0.42 ; pcaq:derivedFromEstimateColumn "CS!U+K" ; pcaq:adjustedBy ex:Init-LineSpeed .
+ex:CE-P-002-VariableOverhead a pcaq:VariableOverheadCost ; rdfs:label "VariableOverhead P-002" ; pcaq:amount 0.20 ; pcaq:derivedFromEstimateColumn "CS!V+L" .
+ex:CE-P-002-FixedOverhead a pcaq:FixedOverheadCost ; rdfs:label "FixedOverhead P-002" ; pcaq:amount 0.18 ; pcaq:derivedFromEstimateColumn "CS!W+M" .
+ex:CE-P-002-Scrap a pcaq:ScrapCost ; rdfs:label "Scrap P-002" ; pcaq:amount 0.05 ; pcaq:derivedFromEstimateColumn "CS!P" .
+ex:CE-P-002-InboundFreight a pcaq:InboundFreightCost ; rdfs:label "InboundFreight P-002" ; pcaq:amount 0.03 ; pcaq:derivedFromEstimateColumn "CS!O" .
+ex:CE-P-002-VCM a pcaq:VCMCost ; rdfs:label "VCM P-002" ; pcaq:amount 2.32 .
+ex:CE-P-002-Mfg a pcaq:ManufacturingCost ; rdfs:label "Mfg cost P-002" ; pcaq:amount 2.50 .
+ex:CB-P-002 a pcaq:CostBreakdown ; rdfs:label "Cost breakdown P-002" ;
+    pcaq:hasCostElement ex:CE-P-002-PurchasedMaterial , ex:CE-P-002-ManufacturedMaterial , ex:CE-P-002-DirectLabor , ex:CE-P-002-VariableOverhead , ex:CE-P-002-FixedOverhead , ex:CE-P-002-Scrap , ex:CE-P-002-InboundFreight , ex:CE-P-002-VCM , ex:CE-P-002-Mfg .
+ex:Base-P-002 a pcaq:BaseSellingPrice ; rdfs:label "Base price N P-002" ; pcaq:amount 2.7778 .
+ex:LTA-P-002 a pcaq:LTASchedule ; rdfs:label "LTA schedule P-002" ; pcaq:hasLTAStep ex:LTA-P-002-Y2 , ex:LTA-P-002-Y3 .
+ex:YP-P-002-Y1 a pcaq:YearPrice ; rdfs:label "P-002 Y1" ; pcaq:yearIndex 1 ; pcaq:amount 2.7778 .
+ex:LTA-P-002-Y2 a pcaq:LTAStep ; rdfs:label "P-002 LTA Y2" ; pcaq:yearIndex 2 ; pcaq:ltaRate 0.02 ; pcaq:ltaSource pcaq:VolumeExportPivotLTA .
+ex:YP-P-002-Y2 a pcaq:YearPrice ; rdfs:label "P-002 Y2" ; pcaq:yearIndex 2 ; pcaq:amount 2.7222 ; pcaq:afterLTAStep ex:LTA-P-002-Y2 .
+ex:LTA-P-002-Y3 a pcaq:LTAStep ; rdfs:label "P-002 LTA Y3" ; pcaq:yearIndex 3 ; pcaq:ltaRate 0.01 ; pcaq:ltaSource pcaq:VolumeExportPivotLTA .
+ex:YP-P-002-Y3 a pcaq:YearPrice ; rdfs:label "P-002 Y3" ; pcaq:yearIndex 3 ; pcaq:amount 2.6950 ; pcaq:afterLTAStep ex:LTA-P-002-Y3 .
+ex:YV-P-002-Y1 a pcaq:YearVolume ; rdfs:label "P-002 vol Y1" ; pcaq:yearIndex 1 ; pcaq:volume 80000 .
+ex:YV-P-002-Y2 a pcaq:YearVolume ; rdfs:label "P-002 vol Y2" ; pcaq:yearIndex 2 ; pcaq:volume 84000 .
+ex:YV-P-002-Y3 a pcaq:YearVolume ; rdfs:label "P-002 vol Y3" ; pcaq:yearIndex 3 ; pcaq:volume 81600 .
+
+ex:Part-P-003 a pcaq:Part ; rdfs:label "Demo quick connector" ; pcaq:partNumber "P-003" .
+ex:Line-P-003 a pcaq:PartLine ; rdfs:label "Line 3: Demo quick connector" ; pcaq:inWorkbook ex:WB-Falcon-v1 ; pcaq:forPart ex:Part-P-003 ;
+    pcaq:inProductType ex:PT-Connectors ; pcaq:madeAtPlant ex:PlantSouth ; pcaq:rfqNumber "RFQ-DEMO-003" ;
+    pcaq:averageAnnualVolume 200000 ; pcaq:rosTarget 0.07 ; pcaq:costEntryMode pcaq:HandTypedArithmetic ; pcaq:purchasedCarveOut 0.90 ;
+    pcaq:hasCostBreakdown ex:CB-P-003 ; pcaq:hasBasePrice ex:Base-P-003 ; pcaq:hasLTASchedule ex:LTA-P-003 ;
+    pcaq:hasYearPrice ex:YP-P-003-Y1 , ex:YP-P-003-Y2 , ex:YP-P-003-Y3 ;
+    pcaq:hasYearVolume ex:YV-P-003-Y1 , ex:YV-P-003-Y2 , ex:YV-P-003-Y3 ;
+    pcaq:hasOverride ex:Ovr-P-003 .
+ex:Ovr-P-003 a pcaq:PriceOverride ; rdfs:label "Override (M)" ; pcaq:amount 3.95 .
+ex:CE-P-003-PurchasedMaterial a pcaq:PurchasedMaterialCost ; rdfs:label "PurchasedMaterial P-003" ; pcaq:amount 2.20 ; pcaq:derivedFromEstimateColumn "CS!G+O-K-L-M" .
+ex:CE-P-003-ManufacturedMaterial a pcaq:ManufacturedMaterialCost ; rdfs:label "ManufacturedMaterial P-003" ; pcaq:amount 0.30 ; pcaq:derivedFromEstimateColumn "CS!J" .
+ex:CE-P-003-DirectLabor a pcaq:DirectLaborCost ; rdfs:label "DirectLabor P-003" ; pcaq:amount 0.38 ; pcaq:derivedFromEstimateColumn "CS!U+K" .
+ex:CE-P-003-VariableOverhead a pcaq:VariableOverheadCost ; rdfs:label "VariableOverhead P-003" ; pcaq:amount 0.22 ; pcaq:derivedFromEstimateColumn "CS!V+L" .
+ex:CE-P-003-FixedOverhead a pcaq:FixedOverheadCost ; rdfs:label "FixedOverhead P-003" ; pcaq:amount 0.15 ; pcaq:derivedFromEstimateColumn "CS!W+M" .
+ex:CE-P-003-Scrap a pcaq:ScrapCost ; rdfs:label "Scrap P-003" ; pcaq:amount 0.06 ; pcaq:derivedFromEstimateColumn "CS!P" .
+ex:CE-P-003-InboundFreight a pcaq:InboundFreightCost ; rdfs:label "InboundFreight P-003" ; pcaq:amount 0.05 ; pcaq:derivedFromEstimateColumn "CS!O" .
+ex:CE-P-003-VCM a pcaq:VCMCost ; rdfs:label "VCM P-003" ; pcaq:amount 3.16 .
+ex:CE-P-003-Mfg a pcaq:ManufacturingCost ; rdfs:label "Mfg cost P-003" ; pcaq:amount 3.31 .
+ex:CB-P-003 a pcaq:CostBreakdown ; rdfs:label "Cost breakdown P-003" ;
+    pcaq:hasCostElement ex:CE-P-003-PurchasedMaterial , ex:CE-P-003-ManufacturedMaterial , ex:CE-P-003-DirectLabor , ex:CE-P-003-VariableOverhead , ex:CE-P-003-FixedOverhead , ex:CE-P-003-Scrap , ex:CE-P-003-InboundFreight , ex:CE-P-003-VCM , ex:CE-P-003-Mfg .
+ex:Base-P-003 a pcaq:BaseSellingPrice ; rdfs:label "Base price N P-003" ; pcaq:amount 3.95 .
+ex:LTA-P-003 a pcaq:LTASchedule ; rdfs:label "LTA schedule P-003" ; pcaq:hasLTAStep ex:LTA-P-003-Y2 , ex:LTA-P-003-Y3 .
+ex:YP-P-003-Y1 a pcaq:YearPrice ; rdfs:label "P-003 Y1" ; pcaq:yearIndex 1 ; pcaq:amount 3.9500 .
+ex:LTA-P-003-Y2 a pcaq:LTAStep ; rdfs:label "P-003 LTA Y2" ; pcaq:yearIndex 2 ; pcaq:ltaRate 0.013 ; pcaq:ltaSource pcaq:ManualLTA .
+ex:YP-P-003-Y2 a pcaq:YearPrice ; rdfs:label "P-003 Y2" ; pcaq:yearIndex 2 ; pcaq:amount 3.9104 ; pcaq:afterLTAStep ex:LTA-P-003-Y2 .
+ex:LTA-P-003-Y3 a pcaq:LTAStep ; rdfs:label "P-003 LTA Y3" ; pcaq:yearIndex 3 ; pcaq:ltaRate 0.013 ; pcaq:ltaSource pcaq:ManualLTA .
+ex:YP-P-003-Y3 a pcaq:YearPrice ; rdfs:label "P-003 Y3" ; pcaq:yearIndex 3 ; pcaq:amount 3.8712 ; pcaq:afterLTAStep ex:LTA-P-003-Y3 .
+ex:YV-P-003-Y1 a pcaq:YearVolume ; rdfs:label "P-003 vol Y1" ; pcaq:yearIndex 1 ; pcaq:volume 200000 .
+ex:YV-P-003-Y2 a pcaq:YearVolume ; rdfs:label "P-003 vol Y2" ; pcaq:yearIndex 2 ; pcaq:volume 210000 .
+ex:YV-P-003-Y3 a pcaq:YearVolume ; rdfs:label "P-003 vol Y3" ; pcaq:yearIndex 3 ; pcaq:volume 204000 .
+
+ex:Part-P-004 a pcaq:Part ; rdfs:label "Demo clip set" ; pcaq:partNumber "P-004" .
+ex:Line-P-004 a pcaq:PartLine ; rdfs:label "Line 4: Demo clip set" ; pcaq:inWorkbook ex:WB-Falcon-v1 ; pcaq:forPart ex:Part-P-004 ;
+    pcaq:inProductType ex:PT-Connectors ; pcaq:madeAtPlant ex:PlantSouth ; pcaq:rfqNumber "RFQ-DEMO-004" ;
+    pcaq:averageAnnualVolume 350000 ; pcaq:rosTarget 0.09 ; pcaq:costEntryMode pcaq:StaticValues ; pcaq:purchasedCarveOut 0.00 ;
+    pcaq:hasCostBreakdown ex:CB-P-004 ; pcaq:hasBasePrice ex:Base-P-004 ; pcaq:hasLTASchedule ex:LTA-P-004 ;
+    pcaq:hasYearPrice ex:YP-P-004-Y1 , ex:YP-P-004-Y2 , ex:YP-P-004-Y3 ;
+    pcaq:hasYearVolume ex:YV-P-004-Y1 , ex:YV-P-004-Y2 , ex:YV-P-004-Y3 .
+ex:CE-P-004-PurchasedMaterial a pcaq:PurchasedMaterialCost ; rdfs:label "PurchasedMaterial P-004" ; pcaq:amount 0.30 ; pcaq:derivedFromEstimateColumn "CS!G+O-K-L-M" .
+ex:CE-P-004-ManufacturedMaterial a pcaq:ManufacturedMaterialCost ; rdfs:label "ManufacturedMaterial P-004" ; pcaq:amount 0.10 ; pcaq:derivedFromEstimateColumn "CS!J" .
+ex:CE-P-004-DirectLabor a pcaq:DirectLaborCost ; rdfs:label "DirectLabor P-004" ; pcaq:amount 0.07 ; pcaq:derivedFromEstimateColumn "CS!U+K" .
+ex:CE-P-004-VariableOverhead a pcaq:VariableOverheadCost ; rdfs:label "VariableOverhead P-004" ; pcaq:amount 0.04 ; pcaq:derivedFromEstimateColumn "CS!V+L" .
+ex:CE-P-004-FixedOverhead a pcaq:FixedOverheadCost ; rdfs:label "FixedOverhead P-004" ; pcaq:amount 0.03 ; pcaq:derivedFromEstimateColumn "CS!W+M" .
+ex:CE-P-004-Scrap a pcaq:ScrapCost ; rdfs:label "Scrap P-004" ; pcaq:amount 0.01 ; pcaq:derivedFromEstimateColumn "CS!P" .
+ex:CE-P-004-InboundFreight a pcaq:InboundFreightCost ; rdfs:label "InboundFreight P-004" ; pcaq:amount 0.01 ; pcaq:derivedFromEstimateColumn "CS!O" .
+ex:CE-P-004-VCM a pcaq:VCMCost ; rdfs:label "VCM P-004" ; pcaq:amount 0.52 .
+ex:CE-P-004-Mfg a pcaq:ManufacturingCost ; rdfs:label "Mfg cost P-004" ; pcaq:amount 0.55 .
+ex:CB-P-004 a pcaq:CostBreakdown ; rdfs:label "Cost breakdown P-004" ;
+    pcaq:hasCostElement ex:CE-P-004-PurchasedMaterial , ex:CE-P-004-ManufacturedMaterial , ex:CE-P-004-DirectLabor , ex:CE-P-004-VariableOverhead , ex:CE-P-004-FixedOverhead , ex:CE-P-004-Scrap , ex:CE-P-004-InboundFreight , ex:CE-P-004-VCM , ex:CE-P-004-Mfg .
+ex:Base-P-004 a pcaq:BaseSellingPrice ; rdfs:label "Base price N P-004" ; pcaq:amount 0.6044 .
+ex:LTA-P-004 a pcaq:LTASchedule ; rdfs:label "LTA schedule P-004" ; pcaq:hasLTAStep ex:LTA-P-004-Y2 , ex:LTA-P-004-Y3 .
+ex:YP-P-004-Y1 a pcaq:YearPrice ; rdfs:label "P-004 Y1" ; pcaq:yearIndex 1 ; pcaq:amount 0.6044 .
+ex:LTA-P-004-Y2 a pcaq:LTAStep ; rdfs:label "P-004 LTA Y2" ; pcaq:yearIndex 2 ; pcaq:ltaRate 0.01 ; pcaq:ltaSource pcaq:ManualLTA .
+ex:YP-P-004-Y2 a pcaq:YearPrice ; rdfs:label "P-004 Y2" ; pcaq:yearIndex 2 ; pcaq:amount 0.5984 ; pcaq:afterLTAStep ex:LTA-P-004-Y2 .
+ex:LTA-P-004-Y3 a pcaq:LTAStep ; rdfs:label "P-004 LTA Y3" ; pcaq:yearIndex 3 ; pcaq:ltaRate 0.02 ; pcaq:ltaSource pcaq:ManualLTA .
+ex:YP-P-004-Y3 a pcaq:YearPrice ; rdfs:label "P-004 Y3" ; pcaq:yearIndex 3 ; pcaq:amount 0.5864 ; pcaq:afterLTAStep ex:LTA-P-004-Y3 .
+ex:YV-P-004-Y1 a pcaq:YearVolume ; rdfs:label "P-004 vol Y1" ; pcaq:yearIndex 1 ; pcaq:volume 350000 .
+ex:YV-P-004-Y2 a pcaq:YearVolume ; rdfs:label "P-004 vol Y2" ; pcaq:yearIndex 2 ; pcaq:volume 367500 .
+ex:YV-P-004-Y3 a pcaq:YearVolume ; rdfs:label "P-004 vol Y3" ; pcaq:yearIndex 3 ; pcaq:volume 357000 .
+
+ex:Part-P-005 a pcaq:Part ; rdfs:label "Demo grommet (draft)" ; pcaq:partNumber "P-005" .
+ex:Line-P-005 a pcaq:PartLine ; rdfs:label "Line 5: Demo grommet (DRAFT, incomplete on purpose)" ;
+    pcaq:inWorkbook ex:WB-Falcon-v1 ; pcaq:forPart ex:Part-P-005 ; pcaq:inProductType ex:PT-Connectors ;
+    pcaq:rfqNumber "RFQ-DEMO-005" ; pcaq:costEntryMode pcaq:ViaCostingSummary .
+
+ex:SQR-TypeOfRequest a pcaq:SQRField ; rdfs:label "SQR: Type of Request" .
+ex:PF-TypeOfRequest a pcaq:PCAQField ; rdfs:label "PCAQ Program Data!(request type)" ; pcaq:cellRef "Program Data!(request type)" .
+ex:Map-TypeOfRequest a pcaq:SQRMapping ; rdfs:label "Type of Request map" ; pcaq:mapsFrom ex:PF-TypeOfRequest ; pcaq:mapsTo ex:SQR-TypeOfRequest ; pcaq:mappingKind pcaq:ManualEntry .
+ex:SQR-SOP a pcaq:SQRField ; rdfs:label "SQR: SOP" .
+ex:PF-SOP a pcaq:PCAQField ; rdfs:label "PCAQ Program Data!(SOP)" ; pcaq:cellRef "Program Data!(SOP)" .
+ex:Map-SOP a pcaq:SQRMapping ; rdfs:label "SOP map" ; pcaq:mapsFrom ex:PF-SOP ; pcaq:mapsTo ex:SQR-SOP ; pcaq:mappingKind pcaq:SystemMapped .
+ex:SQR-Currency a pcaq:SQRField ; rdfs:label "SQR: Currency" .
+ex:PF-Currency a pcaq:PCAQField ; rdfs:label "PCAQ Program Data!(currency)" ; pcaq:cellRef "Program Data!(currency)" .
+ex:Map-Currency a pcaq:SQRMapping ; rdfs:label "Currency map" ; pcaq:mapsFrom ex:PF-Currency ; pcaq:mapsTo ex:SQR-Currency ; pcaq:mappingKind pcaq:SystemMapped .
+ex:SQR-AvgAnnualRevenue a pcaq:SQRField ; rdfs:label "SQR: Average annual revenue" .
+ex:PF-AvgAnnualRevenue a pcaq:PCAQField ; rdfs:label "PCAQ PC Summary!(sales)" ; pcaq:cellRef "PC Summary!(sales)" .
+ex:Map-AvgAnnualRevenue a pcaq:SQRMapping ; rdfs:label "Average annual revenue map" ; pcaq:mapsFrom ex:PF-AvgAnnualRevenue ; pcaq:mapsTo ex:SQR-AvgAnnualRevenue ; pcaq:mappingKind pcaq:SystemMapped .
+ex:SQR-VCM a pcaq:SQRField ; rdfs:label "SQR: VCM %" .
+ex:PF-VCM a pcaq:PCAQField ; rdfs:label "PCAQ PC Summary!(VCM)" ; pcaq:cellRef "PC Summary!(VCM)" .
+ex:Map-VCM a pcaq:SQRMapping ; rdfs:label "VCM % map" ; pcaq:mapsFrom ex:PF-VCM ; pcaq:mapsTo ex:SQR-VCM ; pcaq:mappingKind pcaq:SystemMapped .
+ex:SQR-LTAProposal a pcaq:SQRField ; rdfs:label "SQR: LTA proposal" .
+ex:PF-LTAProposal a pcaq:PCAQField ; rdfs:label "PCAQ PC Summary!(LTA string)" ; pcaq:cellRef "PC Summary!(LTA string)" .
+ex:Map-LTAProposal a pcaq:SQRMapping ; rdfs:label "LTA proposal map" ; pcaq:mapsFrom ex:PF-LTAProposal ; pcaq:mapsTo ex:SQR-LTAProposal ; pcaq:mappingKind pcaq:SystemMapped .
+ex:SQR-EnterProj a pcaq:SQRField ; rdfs:label "SQR: EnterProj #" .
+ex:PF-EnterProj a pcaq:PCAQField ; rdfs:label "PCAQ (none)" ; pcaq:cellRef "(none)" .
+ex:Map-EnterProj a pcaq:SQRMapping ; rdfs:label "EnterProj # map" ; pcaq:mapsFrom ex:PF-EnterProj ; pcaq:mapsTo ex:SQR-EnterProj ; pcaq:mappingKind pcaq:NotInPCAQ .

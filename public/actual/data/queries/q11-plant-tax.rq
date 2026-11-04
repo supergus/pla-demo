@@ -1,0 +1,10 @@
+# Q11: Year-1 sales by plant and tax entity
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX ex:   <http://pcaq.local/demo#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl:  <http://www.w3.org/2002/07/owl#>
+SELECT ?plant ?taxEntity (SUM(?price * ?vol) AS ?y1Sales) (COUNT(?line) AS ?lines) WHERE {
+  ?line pcaq:madeAtPlant ?pl ; pcaq:hasYearPrice ?yp ; pcaq:hasYearVolume ?yv .
+  ?pl rdfs:label ?plant ; pcaq:ownedByTaxEntity/rdfs:label ?taxEntity .
+  ?yp pcaq:yearIndex 1 ; pcaq:amount ?price . ?yv pcaq:yearIndex 1 ; pcaq:volume ?vol .
+} GROUP BY ?plant ?taxEntity

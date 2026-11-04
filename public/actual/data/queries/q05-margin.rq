@@ -1,0 +1,11 @@
+# Q5: Base price vs manufacturing cost and VCM: achieved ROS vs target
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX ex:   <http://pcaq.local/demo#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl:  <http://www.w3.org/2002/07/owl#>
+SELECT ?line ?base ?vcm ?mfg ?rosTarget ?rosAchieved ?overridden WHERE {
+  ?line pcaq:hasBasePrice/pcaq:amount ?base ; pcaq:rosTarget ?rosTarget ; pcaq:hasCostBreakdown ?cb .
+  ?cb pcaq:hasCostElement ?m , ?v . ?m a pcaq:ManufacturingCost ; pcaq:amount ?mfg . ?v a pcaq:VCMCost ; pcaq:amount ?vcm .
+  BIND((?base - ?mfg) / ?base AS ?rosAchieved)
+  BIND(EXISTS { ?line pcaq:hasOverride ?o } AS ?overridden)
+} ORDER BY ?line

@@ -1,0 +1,10 @@
+# Q9: Workbook traceability: ontology terms -> PCAQ sheet / column
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX ex:   <http://pcaq.local/demo#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl:  <http://www.w3.org/2002/07/owl#>
+SELECT ?term ?label ?sheet ?column ?mode WHERE {
+  ?term rdfs:label ?label .
+  { ?term pcaq:sourceSheet ?sheet } UNION { ?term pcaq:sourceColumn ?column }
+  OPTIONAL { ?term pcaq:populationMode ?mode }
+} ORDER BY ?term

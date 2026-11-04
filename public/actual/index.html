@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>PCAQ graph viewer (private draft)</title>
+<meta name="robots" content="noindex"><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css"><script src="vendor/vis-network.min.js"></script></head>
+<body>
+<header>
+  <h1>PCAQ ontology viewer <span class="tag">private draft · fictional demo data</span></h1>
+  <div id="stats" class="muted">loading…</div>
+  <label class="btn">+ Load .ttl <input type="file" id="file" accept=".ttl" multiple hidden></label>
+  <button id="reset">Reset</button>
+  <a class="btn" href="../" title="Back to the PLA console">PLA console</a>
+</header>
+<main>
+  <aside id="left">
+    <input id="filter" placeholder="filter classes / instances…">
+    <div class="seg"><button id="mode-class" class="on">Classes</button><button id="mode-inst">Instances</button></div>
+    <div id="tree"></div>
+  </aside>
+  <section id="center">
+    <nav class="tabs"><button data-tab="graph" class="on">Graph</button><button data-tab="sparql">SPARQL</button><button data-tab="shacl">SHACL</button></nav>
+    <div id="tab-graph" class="tab">
+      <div class="bar"><button id="g-schema">Schema graph</button><button id="g-spine">Quote spine</button><button id="g-clear">Clear</button>
+        <span class="muted">Click a node to inspect · double-click to expand its neighbours</span></div>
+      <div id="graph"></div>
+    </div>
+    <div id="tab-sparql" class="tab" hidden>
+      <div class="bar"><select id="q-pick"></select><button id="q-run" class="primary">Run (Ctrl+Enter)</button><button id="q-csv">CSV</button><span id="q-ms" class="muted"></span></div>
+      <textarea id="q-text" spellcheck="false"></textarea>
+      <div id="q-out"></div>
+    </div>
+    <div id="tab-shacl" class="tab" hidden>
+      <div class="bar"><button id="v-run" class="primary">Validate data against pcaq-shapes.ttl</button><span id="v-ms" class="muted"></span></div>
+      <div id="v-out"></div>
+    </div>
+  </section>
+  <aside id="right"><div id="detail" class="muted">Select a class or instance.</div></aside>
+</main>
+<script type="module" src="app.js"></script>
+</body></html>
