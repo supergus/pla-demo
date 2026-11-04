@@ -45,3 +45,5 @@ th{color:var(--mut);font-weight:500;font-size:12px}td.pv{cursor:pointer;text-dec
 .drawer .x{float:right}.drawer h3{font-size:13px;color:var(--mut);margin-top:16px}.drawer li{margin-bottom:6px}
 .chain{border-left:2px solid var(--acc);padding-left:10px;margin:6px 0;font-size:13px}
 @media (max-width:1100px){.grid{grid-template-columns:1fr;grid-template-areas:"issues" "graph" "log" "quote" "sparql" "reason" "history"}}
+
+.b.fb{background:#4a1d1a;color:#ffb4ae}.fbmsg{color:#ffcf8a;font-size:12px}.banner.api{background:#3d2c0c;color:#ffcf8a}.explain{margin-top:8px;font-size:13px}.explain p{margin:4px 0}

@@ -6,7 +6,7 @@
 <script src="vendor/vis-network.min.js"></script>
 </head><body>
 <header class="top">
-  <div class="brand">PLA Console <span class="sub">Program Lifecycle Agent · RFQ-to-Quote demo v2</span></div>
+  <div class="brand">PLA Console <span class="sub">Program Lifecycle Agent · RFQ-to-Quote demo v3</span></div>
   <div class="hdr" id="hdr" hidden>
     <span>Program <b id="h-prog">RFQ-1002</b></span>
     <span>Stage <b id="h-stage">–</b></span>
@@ -36,6 +36,7 @@
     <button id="btn-new" class="ghost">New run</button>
   </div>
   <div id="banner" class="banner" hidden></div>
+  <div id="api-notice" class="banner api" hidden></div>
   <ol class="pipeline" id="pipeline"></ol>
   <div class="grid">
     <section class="panel issues"><h2>Issues &amp; tasks <span id="issue-count" class="count"></span></h2><div id="issues"></div></section>
@@ -52,15 +53,15 @@
 
 <aside id="drawer" class="drawer" hidden><button class="x" id="drawer-x">✕</button><div id="drawer-body"></div></aside>
 <template id="about-tpl">
-  <h2>About this demo (v2)</h2>
-  <p>A live management console for one PLA run on a sample RFQ. Everything runs in your browser. There is no backend, no API key and no AI call, and nothing is sent anywhere. The browser loads the real ontology modules, shapes, data and competency queries from <code>supergus/rfq-ontology</code> (copied into <code>data/</code>), and all libraries are served from this site (<code>vendor/</code>), not a CDN.</p>
+  <h2>About this demo (v3)</h2>
+  <p>A live management console for one PLA run on a sample RFQ. Everything runs in your browser. The only backend calls are the three AI tool runs (below); nothing else leaves the browser and nothing is sent to a customer. The browser loads the real ontology modules, shapes, data and competency queries from <code>supergus/rfq-ontology</code> (copied into <code>data/</code>), and all libraries are served from this site (<code>vendor/</code>), not a CDN.</p>
   <h3>What is real, replayed or canned</h3>
   <ul>
     <li><span class="b live">live</span> <b>SHACL</b>: <code>validate_rfq</code> runs <code>shapes/rfq-completeness.ttl</code> against the ontology + RFQ-1002 data in your browser with shacl-engine (N3.js parser), before and after your fix. The tool-run JSON also shows the build-time pySHACL result and whether they agree. If the browser engine fails to load, the console falls back to the pySHACL replay and badges it <span class="b replay">replayed</span>.</li>
     <li><span class="b live">live</span> <b>SPARQL</b>: CQ1 to CQ12 run in Oxigraph (WebAssembly) against the loaded graph, which includes your fix once you make it (watch CQ1 go empty). CQ1 and CQ7 are lightly rewritten for standard SPARQL 1.1 evaluation; each file says so in a comment. CQ4 and CQ6 read <code>quote-results.ttl</code>, computed at build time by <code>scripts/quote.py</code>. CQ9 to CQ12 read the repo's sample PLA run (<code>data/pla-run-1002.ttl</code>), not the run in this console.</li>
     <li><b>Reasoner moment</b>: <span class="b live">live</span> a SPARQL ASK that mirrors the OWL definition of <code>rfq:CompleteRFQ</code> on the asserted data; <span class="b replay">replayed</span> the HermiT result (via ROBOT, at build time, for the DAP fix), since HermiT cannot run in a browser. The <span class="b inf">inferred</span> type is shown dashed in the graph.</li>
     <li><span class="b live">live</span> <b>Cost</b>: <code>cost_quote</code> is a JavaScript port of <code>scripts/quote.py</code>, run in your browser.</li>
-    <li><span class="b canned">canned</span> <b>AI tools</b>: <code>parse_rfq_document</code> and <code>match_library_part</code> return pre-written output; no model is called. The PLA's <code>rfq:SimilarityMatch</code> for the RFQ line (score, method) is read by SPARQL from the repo's sample run.</li>
+    <li><span class="b live">live · Llama 3.3 70B</span> <b>AI tools</b>: <code>parse_rfq_document</code> (on the RFQ-1003 sample email), <code>match_library_part</code> and <code>explain_quote</code> call the <code>rfq-pla</code> Worker (Cloudflare Workers AI, durable Workflow, code-side validation, $20/day cap). The scripted RFQ-1002 facts still drive the graph and SHACL check. If the API is resting (daily budget), rate-limited, your session expired, or it times out, the step uses its pre-written output, badged <span class="b canned">scripted (fallback)</span> with the reason.</li>
     <li><b>Simulated</b>: tool latency, injected failures, and "send quote".</li>
   </ul>
   <h3>Demo assumptions</h3>

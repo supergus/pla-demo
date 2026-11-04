@@ -1,4 +1,5 @@
 import { MODEL, costQuote } from "./cost.js";
+import { runTool, MODEL_LABEL } from "./api.js";
 import { kb, loadKB, resetStore, validateRFQ, fixTurtle, applyFix, sparql, completeRFQ, COMPLETE_RFQ_ASK, QUERIES } from "./kb.js";
 
 const KEY = "rfqdemo.run.v2", HKEY = "rfqdemo.history.v1";
@@ -16,17 +17,20 @@ let SHACL = null, state = null, loopToken = 0, net = null, nodesDS = null, edges
 
 // ---------- tools ----------
 const TOOLS = {
-  parse_rfq_document: { kind: "ai", canned: true, desc: "RFQ package (email + drawing PDF) to draft RFQ facts" },
+  parse_rfq_document: { kind: "ai", canned: true, desc: "RFQ package (email + drawing PDF) to draft RFQ facts. Calls the rfq-pla Worker (Llama 3.3 70B) on the RFQ-1003 sample email; scripted RFQ-1002 facts drive the graph" },
   validate_rfq: { kind: "det", live: true, desc: "SHACL completeness check (shapes/rfq-completeness.ttl), run in your browser by shacl-engine" },
   classify_rfq: { kind: "det", live: true, desc: "Is RFQ-1002 a rfq:CompleteRFQ? Live SPARQL check of the OWL definition, plus the build-time HermiT result (replayed)" },
-  match_library_part: { kind: "ai", canned: true, desc: "Match the RFQ line to a known product (rfq:SimilarityMatch) and each BOM line to a library entry; record score + method" },
+  match_library_part: { kind: "ai", canned: true, desc: "Match the RFQ line to a known product (rfq:SimilarityMatch, live via the rfq-pla Worker) and each BOM line to a library entry; record score + method" },
   explode_bom: { kind: "det", desc: "Expand the matched BOM and routings into cost drivers" },
   cost_quote: { kind: "det", desc: "Cost calculator (JS port of scripts/quote.py), one price per quantity break" },
+  explain_quote: { kind: "ai", canned: true, desc: "Plain-language explanation of the computed quote (rfq-pla Worker; the model never does arithmetic)" },
   render_quote: { kind: "det", desc: "Render the approved quote document" },
 };
 function badges(tool, rec) {
   const t = TOOLS[tool]; let h = t.kind === "ai" ? '<span class="b ai">AI</span>' : '<span class="b det">deterministic</span>';
-  if (t.canned) h += '<span class="b canned">canned</span>';
+  if (rec && rec.live) h += `<span class="b live">live · ${MODEL_LABEL}</span><span class="b det">${rec.live.ms} ms${rec.live.usage ? ` · ${rec.live.usage.prompt_tokens ?? "?"}+${rec.live.usage.completion_tokens ?? "?"} tok` : ""}${rec.live.attempts ? ` · ${rec.live.attempts} attempts` : ""}</span>`;
+  else if (rec && rec.fallback) h += `<span class="b canned" title="${esc(rec.fallback.message)}">scripted (fallback)</span><span class="b fb">${esc(rec.fallback.reason)}</span>`;
+  else if (t.canned) h += '<span class="b canned">canned</span>';
   const replay = rec ? rec.replay : (t.live && !kb.ready);
   if (t.live && !replay) h += '<span class="b live">live</span>';
   if (replay) h += '<span class="b replay">replayed</span>';
@@ -42,7 +46,8 @@ function addEdge(from, to, label, extra) { const id = `${from}|${label}|${to}`; 
 // ---------- PLA plan (each step = one tool call or one gate) ----------
 const STEPS = [
   { stage: "intake", tool: "parse_rfq_document", input: () => ({ package: "RFQ-1002 package (sample)", files: ["RFQ-1002 email.eml", "DWG-BRK-200 rev A.pdf"] }),
-    run: () => {
+    run: async (runId, rec) => {
+      const live = await liveTool(rec, "parse_rfq_document", { text: RFQ_1003_EMAIL });
       addNode("RFQ-1002", "RFQ-1002 rev A\na rfq:RFQPackage", "rfq"); addNode("NORTHWIND", "Northwind Agricultural Equipment", "party"); addEdge("RFQ-1002", "NORTHWIND", "issuedBy");
       addNode("CT", "Commercial terms\nNet 30", "terms"); addEdge("RFQ-1002", "CT", "hasCommercialTerms");
       addNode("DT", "Delivery terms\n2027-03-01", "terms"); addEdge("RFQ-1002", "DT", "hasDeliveryTerms");
@@ -51,7 +56,8 @@ const STEPS = [
       for (const q of MODEL.breaks) { addNode("QB" + q, "Qty " + q.toLocaleString(), "qty"); addEdge("L1", "QB" + q, "hasQuantityBreak"); }
       return { rfq: "ex:RFQ-1002", revision: "A", issuedBy: "ex:NORTHWIND", paymentTerms: "Net 30", requestedDeliveryDate: "2027-03-01T00:00:00", drawing: "ex:DWG-BRK-200",
         line: { product: "BRK-200 bracket", quantityBreaks: MODEL.breaks }, incoterm: null, materialSpec: null,
-        lowConfidence: [], note: "Canned output: no model was called in v1." };
+        lowConfidence: [], note: "Scripted RFQ-1002 facts drive the graph and SHACL check.",
+        ...(live ? { liveParse: { source: "RFQ-1003 sample email", ...live } } : {}) };
     } },
   { stage: "validate", tool: "validate_rfq", input: () => ({ focus: "ex:RFQ-1002", shapes: "shapes/rfq-completeness.ttl" }),
     run: async (runId, rec) => {
@@ -65,8 +71,10 @@ const STEPS = [
   { stage: "validate", tool: "classify_rfq", input: () => ({ individual: "ex:RFQ-1002", definedClass: "rfq:CompleteRFQ (owl:equivalentClass, ontology/rfq-package.ttl)" }),
     run: (runId, rec) => classify(rec) },
   { stage: "match", tool: "match_library_part", input: () => ({ product: "BRK-200 bracket", bomLines: MODEL.bom.map((b) => b.id) }),
-    run: () => {
+    run: async (runId, rec) => {
+      const live = await liveTool(rec, "match_library_part", { line: "RFQ-1002 line 1: BRK-200 welded mounting bracket", requirements: ["ASTM A36 steel plate"], candidates: { "BRK-100": "BRK-100 welded mounting bracket" } });
       const sm = plaMatch();
+      if (live && live.matchedProduct) Object.assign(sm, { product: live.matchedProduct, score: String(live.score), method: live.method, confidence: live.confidence, run: runId, source: "rfq-pla Worker (live)" });
       addNode("BRK-100", "Product BRK-100\n(known, has BOM)", "product");
       addNode("SM-1002-L1", `rfq:SimilarityMatch (PLA)\nRFQ line → ${sm.product.replace("ex:", "")}\nscore ${sm.score} · ${sm.method}`, "plamatch",
         `SM-1002-L1: ${sm.line} → ${sm.product}, similarityScore ${sm.score}, similarityMethod "${sm.method}", confidence ${sm.confidence}, written by ${sm.run}`);
@@ -82,7 +90,7 @@ const STEPS = [
         out.push({ bomLine: b.id, matchedEntry: b.entry, similarityScore: b.score, similarityMethod: b.method, confidence: b.confidence, manualOverride: !!b.override, ...(b.override ? { overrideUnitCost: b.unitCost } : {}) });
       }
       raiseIssue({ id: "LOWCONF-BL-5", title: "BL-5 priced by manual override", detail: "No library entry for the serial-number label. Override unit cost $0.25 recorded with confidence low (CQ7 manual review).", owner: "PLA", kind: "note", resolved: true, resolution: "Accepted: override recorded as a fact" });
-      return { similarityMatch: sm, matches: out, note: "Canned output: no model was called. The RFQ-line match values are read live (SPARQL, CQ12) from data/pla-run-1002.ttl in rfq-ontology." };
+      return { similarityMatch: sm, matches: out, note: live ? "RFQ-line match from the live model; BOM-line matches are scripted." : "Scripted fallback: the RFQ-line match values are read live (SPARQL, CQ12) from data/pla-run-1002.ttl in rfq-ontology." };
     } },
   { stage: "cost", tool: "explode_bom", input: () => ({ bom: "ex:BOM-BRK-100", quoteDate: MODEL.quoteDate }),
     run: () => {
@@ -98,6 +106,14 @@ const STEPS = [
       addNode("Q", "Quote Q-1002-A", "quote"); addEdge("Q", "RFQ-1002", "respondsTo");
       for (const b of r.breaks) { addNode("PB" + b.quantity, `Qty ${b.quantity.toLocaleString()}: $${fmt(b.unitPrice)}/u\ntotal $${fmt(b.total)}`, "price"); addEdge("Q", "PB" + b.quantity, "hasPriceBreak"); addEdge("PB" + b.quantity, "QB" + b.quantity, "forQuantityBreak"); }
       return { incoterm: r.incoterm + (r.sellerPays ? " (seller pays freight)" : " (buyer pays freight)"), breaks: r.breaks.map((b) => ({ quantity: b.quantity, unitPrice: b.unitPrice, extended: b.extended, nre: b.nre, freight: b.freight, total: b.total, cogs: +b.cogs.toFixed(4), loaded: +b.loaded.toFixed(6) })) };
+    } },
+  { stage: "cost", tool: "explain_quote", input: () => quoteForExplain(),
+    run: async (runId, rec) => {
+      const qi = quoteForExplain();
+      const live = await liveTool(rec, "explain_quote", qi);
+      const out = live || cannedExplain(qi);
+      state.quote.explanation = { ...out, by: runId, live: !!live };
+      return out;
     } },
   { stage: "approve", gate: true },
   { stage: "send", tool: "render_quote", input: () => ({ quote: "ex:Q-1002-A", approvedBy: state.approval?.by }),
@@ -138,6 +154,39 @@ function plaMatch() {
   if (!kb.ready) return fallback;
   try { const r = sparql(kb.queries[12].text); const row = r.rows[0]; if (!row) return fallback;
     const o = Object.fromEntries(r.vars.map((v, i) => [v, row[i]])); return { ...o, source: "CQ12 (live SPARQL)" }; } catch { return fallback; }
+}
+// ---------- live AI tools (rfq-pla Worker) ----------
+const RFQ_1003_EMAIL = `From: purchasing@northwind.example
+Subject: RFQ-1003 rev A - BRK-300 welded bracket
+
+Hello,
+
+Please quote RFQ-1003 rev A for the BRK-300 welded mounting bracket per drawing BRK-300 rev A.
+Material: ASTM A36 steel plate. Quantities: 250 and 2,500 pieces.
+Delivery by 1 April 2027. Payment Net 30. We'd normally want it delivered to our dock (DAP?) but
+logistics will confirm.
+
+Thanks,
+Northwind Agricultural Equipment`;
+async function liveTool(rec, tool, input) {
+  const key = `${state.runId}-${tool}`.replace(/[^\w-]/g, "-").slice(0, 64);
+  const r = await runTool(tool, input, key);
+  if (r.ok) { rec.live = { model: MODEL_LABEL, workerRunId: r.runId, ms: r.ms, polls: r.polls, workflow: r.workflow, deduplicated: r.deduplicated, usage: r.usage, attempts: r.attempts }; rec.liveInput = input; return r.output; }
+  rec.fallback = { reason: r.reason, message: r.message, status: r.status ?? null, ms: r.ms };
+  const verbatim = r.reason === "resting" || r.reason === "rate_limited";
+  raiseIssue({ id: "API-" + r.reason, title: r.reason === "resting" ? r.message : r.reason === "unauthorized" ? "Session expired: reload and enter the secret again" : `Live model unavailable (${r.reason})`,
+    detail: `${verbatim ? r.message + " " : r.reason === "unauthorized" ? r.message + " " : r.message + ". "}${tool} used its scripted output instead (badged "scripted (fallback)").`, owner: r.reason === "unauthorized" ? "human" : "PLA", kind: "api", resolved: true, resolution: "Fell back to scripted output" });
+  if (r.reason === "resting") state.apiNotice = r.message; else if (r.reason === "unauthorized") state.apiNotice = r.message;
+  return null;
+}
+function quoteForExplain() {
+  return { quote: "Q-1002-A", product: "BRK-200 bracket (priced as BRK-100)", incoterm: state.incoterm || "DAP",
+    breaks: (state.quote?.breaks || []).map((b) => ({ line: "L1", quantity: b.quantity, unit_price: b.unitPrice, nre: b.nre, freight: b.freight, total: b.total })) };
+}
+function cannedExplain(q) {
+  const parts = q.breaks.map((b) => `${b.quantity.toLocaleString("en-US")} units at $${fmt(b.unit_price)} each (total $${fmt(b.total)})`);
+  return { quote: q.quote, summary: `Quote ${q.quote}: ${parts.join("; ")}. The unit price falls with volume because setup cost is spread over more parts.`,
+    drivers: ["Setup cost spread over the lot", "Material from library matches", `Freight under ${q.incoterm}`], breaks: parts, caveats: ["Scripted explanation (no model call)."] };
 }
 function currentFix() { return fixTurtle(state.fixes?.incoterm, state.fixes?.spec); }
 
@@ -268,8 +317,10 @@ function render() {
   $("log").innerHTML = pend + state.runs.slice().reverse().map((r) => `<details class="run ${r.ok ? "ok" : "err"}"><summary><span class="nm">${r.id} · ${r.tool}</span>${badges(r.tool, r)}<span class="r">${r.ok ? "ok" : "error"} · attempt ${r.attempt} · ${r.durationMs} ms</span></summary>
     <div class="body"><div class="muted">${esc(TOOLS[r.tool].desc)} · stage ${r.stage} · ${new Date(r.startedAt).toLocaleTimeString()}</div>
     ${r.error ? `<p style="color:#ffb4ae">${esc(r.error)}${r.nextRetryInMs ? ` · next retry in ${r.nextRetryInMs / 1000}s` : ""}</p>` : ""}
-    <pre>${esc(JSON.stringify({ toolRun: r.id, tool: r.tool, kind: r.kind, canned: r.canned, replayed: !!r.replay, liveInBrowser: !!TOOLS[r.tool].live && !r.replay, attempt: r.attempt, input: r.input, output: r.output ?? null, error: r.error ?? null }, null, 2))}</pre></div></details>`).join("");
+    ${r.fallback ? `<p class="fbmsg">Scripted fallback: ${esc(r.fallback.message)}</p>` : ""}
+    <pre>${esc(JSON.stringify({ toolRun: r.id, tool: r.tool, kind: r.kind, canned: r.canned && !r.live, live: r.live || null, fallback: r.fallback || null, replayed: !!r.replay, liveInBrowser: !!TOOLS[r.tool].live && !r.replay, attempt: r.attempt, input: r.input, output: r.output ?? null, error: r.error ?? null }, null, 2))}</pre></div></details>`).join("");
   renderQuote(); renderGraph(); renderHistory(); renderReasoner();
+  $("api-notice").hidden = !state.apiNotice; if (state.apiNotice) $("api-notice").textContent = state.apiNotice;
   $("banner").hidden = !state._resumed; if (state._resumed) $("banner").textContent = `Resumed ${state.runId} from saved state after a page reload (step ${state.step + 1} of ${STEPS.length}).`;
 }
 const ROWS = [["material", "Material"], ["conversion", "Conversion"], ["cogs", "COGS"], ["overhead", "Overhead 12%"], ["sga", "SG&A 10%"], ["loaded", "Loaded cost"], ["unitPrice", "Unit price"], ["extended", "Extended"], ["nre", "NRE"], ["freight", "Freight"], ["total", "Total"]];
@@ -278,7 +329,8 @@ function renderQuote() {
   const B = state.quote.breaks;
   $("quote").innerHTML = `<table><tr><th>USD (Q-1002-A)</th>${B.map((b) => `<th>Qty ${b.quantity.toLocaleString()}</th>`).join("")}</tr>` +
     ROWS.map(([k, l]) => `<tr class="${k === "total" || k === "unitPrice" ? "tot" : ""}"><td>${l}</td>${B.map((b, i) => `<td class="pv" data-pv="${k}:${i}">${fmt(b[k], ["unitPrice", "extended", "nre", "freight", "total"].includes(k) ? 2 : 4)}</td>`).join("")}</tr>`).join("") +
-    `</table><p class="muted" style="font-size:12px">Computed live in your browser by cost_quote (${state.quote.runId}). Unit price = loaded ÷ (1 − 25%), rounded half-up to the cent.</p>`;
+    `</table><p class="muted" style="font-size:12px">Computed live in your browser by cost_quote (${state.quote.runId}). Unit price = loaded ÷ (1 − 25%), rounded half-up to the cent.</p>` +
+    (state.quote.explanation ? `<div class="explain" id="explain"><b>Explanation</b> ${state.quote.explanation.live ? `<span class="b live">live · ${MODEL_LABEL}</span>` : '<span class="b canned">scripted (fallback)</span>'} <span class="muted">(${state.quote.explanation.by})</span><p>${esc(state.quote.explanation.summary)}</p>${state.quote.explanation.drivers?.length ? `<ul>${state.quote.explanation.drivers.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}</div>` : "");
   if (state.awaiting === "approval") $("gate").innerHTML = `<div class="gate"><b>Human approval gate.</b> The PLA proposes this quote and waits. Agents propose, people approve.<div class="act"><button class="primary" id="btn-approve">Approve &amp; send</button><button class="danger" id="btn-reject">Reject</button></div></div>`;
   else if (state.approval) $("gate").innerHTML = `<div class="gate">Quote <b>${state.approval.decision}</b> by ${state.approval.by} at ${new Date(state.approval.at).toLocaleTimeString()}.${state.status === "sent" ? " Sent (simulated; nothing left the browser)." : ""}</div>`;
   else $("gate").innerHTML = "";

@@ -1,6 +1,29 @@
 """Headless end-to-end test. Usage: python tools/e2e.py URL [shotdir]"""
-import sys, json
+import sys, json, re
 from playwright.sync_api import sync_playwright
+RESTING = "The demo is resting for today. Please try again tomorrow."
+OUT = {"parse_rfq_document": {"rfq_id": "RFQ-1003", "revision": "A", "customer": "Northwind Agricultural Equipment", "incoterm": "DAP", "delivery_date": "2027-04-01",
+        "lines": [{"part": "BRK-300", "description": "welded mounting bracket", "quantities": [250, 2500]}], "low_confidence": ["incoterm"], "missing_fields": ["finish_spec"]},
+       "match_library_part": {"product": "BRK-100", "matchedProduct": "ex:BRK-100", "score": 0.91, "method": "llm:llama-3.3-70b family+process", "confidence": "high", "written": True},
+       "explain_quote": {"quote": "Q-1002-A", "summary": "Quote Q-1002-A: the unit price falls from $60.86 at 100 units to $57.72 at 10,000 units.", "drivers": ["Setup spread over the lot"], "breaks": [], "caveats": []}}
+def mock_api(page, mode):
+    """Route-intercept /api/run. mode: ok | resting | unauthorized | timeout | network"""
+    runs = {}; seen = {"post": 0, "keys": []}
+    def handler(route):
+        req = route.request
+        if mode == "network": return route.abort()
+        if req.method == "POST":
+            seen["post"] += 1; key = req.headers.get("idempotency-key", ""); seen["keys"].append(key)
+            if mode == "resting": return route.fulfill(status=503, content_type="application/json", body=json.dumps({"error": "resting", "message": RESTING}))
+            if mode == "unauthorized": return route.fulfill(status=401, content_type="application/json", body=json.dumps({"error": "unauthorized"}))
+            rid = "r-" + key; runs[rid] = json.loads(req.post_data)["tool"]
+            return route.fulfill(status=202, content_type="application/json", body=json.dumps({"runId": rid}))
+        rid = req.url.rsplit("/", 1)[1]; tool = runs.get(rid)
+        if mode == "timeout": return route.fulfill(status=200, content_type="application/json", body=json.dumps({"runId": rid, "tool": tool, "status": "queued", "workflow": "running", "output": None, "error": None}))
+        return route.fulfill(status=200, content_type="application/json", body=json.dumps({"runId": rid, "tool": tool, "status": "complete", "workflow": None, "output": OUT[tool], "error": None}))
+    page.route(re.compile(r".*/api/run(/.*)?$"), handler)
+    page.add_init_script("window.PLA_API_POLL_MS = 200; window.PLA_API_TIMEOUT_MS = %d;" % (2500 if mode == "timeout" else 90000))
+    return seen
 URL = sys.argv[1]; SH = sys.argv[2] if len(sys.argv) > 2 else "/tmp"
 errs = []; results = []; external = []
 def check(name, cond): results.append((name, bool(cond))); print(("PASS " if cond else "FAIL ") + name)
@@ -10,6 +33,7 @@ with sync_playwright() as pw:
     p.on("console", lambda m: m.type == "error" and errs.append(m.text)); p.on("pageerror", lambda e: errs.append(str(e)))
     host = URL.split("/")[2]
     p.on("request", lambda r: (r.url.split("/")[2] != host and not r.url.startswith("data:")) and external.append(r.url))
+    api = mock_api(p, "ok")
     p.goto(URL); p.wait_for_load_state("networkidle"); p.wait_for_selector("#btn-upload:not([disabled])"); p.screenshot(path=f"{SH}/01-landing.png")
     check("knowledge base (shacl-engine + Oxigraph) loaded in browser", p.evaluate("window.__pla.kb.ready && !window.__pla.kb.error"))
     EXPECT = {1: 2, 2: 5, 3: 5, 4: 3, 5: 4, 6: 1, 7: 1, 8: 1, 9: 2, 10: 2, 11: 1, 12: 1}
@@ -62,6 +86,13 @@ with sync_playwright() as pw:
     check("provenance drawer shows source", "FY2026" in p.inner_text("#drawer") or "Margin source" in p.inner_text("#drawer"))
     p.screenshot(path=f"{SH}/05-approval-gate-provenance.png", full_page=True); p.click("#drawer-x")
     p.reload(); p.wait_for_function("window.__pla.state"); check("refresh at gate keeps awaiting", st(p)["status"] == "awaiting")
+    ai = {r["tool"]: r for r in s["runs"] if r["ok"] and r["tool"] in OUT}
+    check("mocked API: all three AI tools ran live (parse, match, explain)", all(t in ai and ai[t].get("live") and not ai[t].get("fallback") for t in OUT))
+    check("live parse output (RFQ-1003, quantities 250/2500) recorded in run log", ai["parse_rfq_document"]["output"]["liveParse"]["lines"][0]["quantities"] == [250, 2500])
+    check("Idempotency-Key stable per run+step (one POST per tool, despite reload)", sorted(set(api["keys"])) == sorted(f"{s['runId']}-{t}" for t in OUT))
+    check("console badges 'live · Llama 3.3 70B'", p.locator("#log .b.live", has_text="Llama 3.3 70B").count() >= 3)
+    check("explanation shown under quote (live)", "60.86" in p.inner_text("#explain") and "llama" in p.inner_text("#explain").lower())
+    p.locator("#explain").scroll_into_view_if_needed(); p.screenshot(path=f"{SH}/05e-live-explain-quote.png", full_page=True)
     p.click("#btn-approve"); p.wait_for_function("window.__pla.state.status === 'sent'", timeout=20000)
     check("approve -> sent (simulated)", True); p.screenshot(path=f"{SH}/06-sent.png", full_page=True)
     # persistent failure path
@@ -74,6 +105,17 @@ with sync_playwright() as pw:
     check("run history lists runs", p.locator("#history .hist").count() >= 2)
     p.click("#btn-about"); p.screenshot(path=f"{SH}/08-about.png")
     b.close()
+    # ---------- fallback scenarios (mocked /api) ----------
+    for mode, reason in [("resting", "resting"), ("unauthorized", "unauthorized"), ("timeout", "timeout"), ("network", "network")]:
+        b = pw.chromium.launch(); q = b.new_page(viewport={"width": 1280, "height": 1000}); mock_api(q, mode)
+        q.goto(URL); q.wait_for_selector("#btn-upload:not([disabled])"); q.click("#btn-upload")
+        q.wait_for_function("window.__pla.state && window.__pla.state.status === 'blocked'", timeout=30000)
+        s = st(q); r = [x for x in s["runs"] if x["tool"] == "parse_rfq_document"][-1]
+        check(f"{mode}: parse step fell back to scripted output (reason {reason}) and run continued", r["ok"] and r.get("fallback", {}).get("reason") == reason and not r.get("live") and s["status"] == "blocked")
+        check(f"{mode}: badge 'scripted (fallback)' shown", q.locator("#log .b.canned", has_text="scripted (fallback)").count() >= 1)
+        if mode == "resting": check("503 message shown verbatim in UI", RESTING in q.inner_text("#api-notice") and RESTING in q.inner_text("#issues"))
+        if mode == "unauthorized": check("401 tells user to reload and re-enter secret", "enter the secret again" in q.inner_text("#api-notice"))
+        q.screenshot(path=f"{SH}/09-fallback-{mode}.png", full_page=True); b.close()
 check("no console errors", not errs); print("console errors:", errs)
 check("no requests to other hosts (libraries vendored)", not external); print("external requests:", external)
 print(json.dumps({"passed": sum(r for _, r in results), "total": len(results)}))
