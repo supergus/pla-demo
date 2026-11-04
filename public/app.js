@@ -2,7 +2,7 @@ import { MODEL, costQuote } from "./cost.js";
 import { runTool, MODEL_LABEL } from "./api.js";
 import { kb, loadKB, resetStore, validateRFQ, fixTurtle, applyFix, sparql, completeRFQ, COMPLETE_RFQ_ASK, QUERIES } from "./kb.js";
 
-const KEY = "rfqdemo.run.v2", HKEY = "rfqdemo.history.v1";
+const KEY = "rfqdemo.run.v2", HKEY = "rfqdemo.history.v1", RKEY = "rfqdemo.runstate.v1:"; // RKEY+runId = full saved state per run
 const STAGES = ["intake", "validate", "match", "cost", "approve", "send"];
 const MAX_ATTEMPTS = 4, BASE_BACKOFF = 1000, PACE = 900;
 const $ = (id) => document.getElementById(id);
@@ -170,7 +170,9 @@ Thanks,
 Northwind Agricultural Equipment`;
 async function liveTool(rec, tool, input) {
   const key = `${state.runId}-${tool}`.replace(/[^\w-]/g, "-").slice(0, 64);
+  const s0 = state;
   const r = await runTool(tool, input, key);
+  if (state !== s0) throw new Error("__detached"); // user left this run while the call was in flight
   if (r.ok) { rec.live = { model: MODEL_LABEL, workerRunId: r.runId, ms: r.ms, polls: r.polls, workflow: r.workflow, deduplicated: r.deduplicated, usage: r.usage, attempts: r.attempts }; rec.liveInput = input; return r.output; }
   rec.fallback = { reason: r.reason, message: r.message, status: r.status ?? null, ms: r.ms };
   const verbatim = r.reason === "resting" || r.reason === "rate_limited";
@@ -197,12 +199,13 @@ function freshState() {
     stages: Object.fromEntries(STAGES.map((s) => [s, "pending"])), issues: [], runs: [], nodes: [], edges: [], quote: null,
     failArmed: false, failMode: "transient", failRemaining: 0, approval: null, awaiting: null, seq: 0 };
 }
-function save() { if (state) localStorage.setItem(KEY, JSON.stringify(state)); updateHistory(); }
+function save() { if (state) { const j = JSON.stringify(state); localStorage.setItem(KEY, j); try { localStorage.setItem(RKEY + state.runId, j); } catch (e) { console.warn("could not save run snapshot", e); } } updateHistory(); }
 function loadHistory() { try { return JSON.parse(localStorage.getItem(HKEY)) || []; } catch { return []; } }
 function updateHistory() {
   if (!state) return; const h = loadHistory(); const total = state.quote ? state.quote.breaks.map((b) => b.total) : null;
   const rec = { runId: state.runId, startedAt: state.startedAt, status: state.status, totals: total };
   const i = h.findIndex((x) => x.runId === state.runId); if (i >= 0) h[i] = rec; else h.unshift(rec);
+  for (const x of h.slice(20)) localStorage.removeItem(RKEY + x.runId);
   localStorage.setItem(HKEY, JSON.stringify(h.slice(0, 20)));
 }
 function raiseIssue(iss) { if (!state.issues.find((i) => i.id === iss.id)) state.issues.push({ resolved: false, raisedAt: now(), ...iss }); }
@@ -223,15 +226,18 @@ async function loop() {
   }
 }
 async function execStep(st) {
+  const s0 = state;
   state.attempt += 1;
   const runId = `TR-${String(++state.seq).padStart(3, "0")}`;
   const t0 = performance.now(), started = now();
   const rec = { id: runId, tool: st.tool, kind: TOOLS[st.tool].kind, canned: !!TOOLS[st.tool].canned, replay: !!TOOLS[st.tool].replay, stage: st.stage, attempt: state.attempt, startedAt: started, input: st.input() };
   await sleep(250 + Math.random() * 600); // simulated tool latency
+  if (state !== s0) return;
   try {
     if (state.failArmed) { state.failArmed = false; state.failRemaining = state.failMode === "transient" ? 2 : 99; state.failTool = st.tool; }
     if (state.failRemaining > 0 && state.failTool === st.tool) { state.failRemaining -= 1; throw new Error(`Injected failure: ${st.tool} timed out (simulated)`); }
     const out = await st.run(runId, rec);
+    if (state !== s0) return;
     rec.output = out; rec.ok = true; rec.durationMs = Math.round(performance.now() - t0); state.runs.push(rec);
     resolveIssue("FAIL-" + st.tool, `Recovered on attempt ${state.attempt}`);
     state.attempt = 0;
@@ -239,6 +245,7 @@ async function execStep(st) {
     if (nxt === "awaitFixes") { state.stages[st.stage] = "blocked"; state.status = "blocked"; state.awaiting = "fixes"; }
     else { const later = STEPS.slice(state.step + 1).some((s) => s.stage === st.stage); if (!later) state.stages[st.stage] = "done"; state.step += 1; }
   } catch (e) {
+    if (state !== s0) return; // run was left mid-step; it resumes (same Idempotency-Key) when reopened
     rec.ok = false; rec.error = e.message; rec.durationMs = Math.round(performance.now() - t0); state.runs.push(rec);
     raiseIssue({ id: "FAIL-" + st.tool, title: `${st.tool} failing`, detail: e.message, owner: "PLA", kind: "failure" });
     if (state.attempt < MAX_ATTEMPTS) {
@@ -297,7 +304,7 @@ function render() {
   $("hdr").hidden = false;
   const cur = STEPS[Math.min(state.step, STEPS.length - 1)].stage;
   $("h-stage").textContent = state.status === "sent" ? "complete" : cur;
-  const label = state.paused ? "paused" : { running: "running", blocked: "blocked: needs human", awaiting: "awaiting approval", failed: "failed", sent: "quote sent", rejected: "rejected" }[state.status];
+  const label = state.paused ? "paused" : { running: "running", blocked: "blocked: needs human", awaiting: "awaiting approval", failed: "failed", sent: "quote sent", rejected: "rejected", abandoned: "abandoned" }[state.status];
   $("h-status").textContent = label; $("h-status").className = "badge " + (state.paused ? "paused" : state.status === "sent" ? "done" : state.status);
   $("h-run").textContent = state.runId;
   $("pipeline").innerHTML = STAGES.map((s) => `<li class="${state.stages[s]}" data-stage="${s}"><div class="n">${s}</div><div class="s">${state.stages[s]}</div></li>`).join("");
@@ -321,6 +328,8 @@ function render() {
     <pre>${esc(JSON.stringify({ toolRun: r.id, tool: r.tool, kind: r.kind, canned: r.canned && !r.live, live: r.live || null, fallback: r.fallback || null, replayed: !!r.replay, liveInBrowser: !!TOOLS[r.tool].live && !r.replay, attempt: r.attempt, input: r.input, output: r.output ?? null, error: r.error ?? null }, null, 2))}</pre></div></details>`).join("");
   renderQuote(); renderGraph(); renderHistory(); renderReasoner();
   $("api-notice").hidden = !state.apiNotice; if (state.apiNotice) $("api-notice").textContent = state.apiNotice;
+  const ro = ["sent", "rejected", "abandoned"].includes(state.status);
+  if (state._opened && !state._resumed) { $("banner").hidden = false; $("banner").textContent = ro ? `Viewing ${state.runId} (${state.status}). Read-only: this run is finished.` : `Opened ${state.runId} from run history (${state.status}).`; return; }
   $("banner").hidden = !state._resumed; if (state._resumed) $("banner").textContent = `Resumed ${state.runId} from saved state after a page reload (step ${state.step + 1} of ${STEPS.length}).`;
 }
 const ROWS = [["material", "Material"], ["conversion", "Conversion"], ["cogs", "COGS"], ["overhead", "Overhead 12%"], ["sga", "SG&A 10%"], ["loaded", "Loaded cost"], ["unitPrice", "Unit price"], ["extended", "Extended"], ["nre", "NRE"], ["freight", "Freight"], ["total", "Total"]];
@@ -386,8 +395,38 @@ function runSparql() {
 }
 function renderHistory() {
   const h = loadHistory();
-  const html = h.length ? h.map((x) => `<div class="hist"><span>${x.runId}</span><span class="badge ${x.status === "sent" ? "done" : x.status}">${x.status}</span>${x.totals ? `<span>$${fmt(x.totals[0])} / $${fmt(x.totals[1])} / $${fmt(x.totals[2])}</span>` : ""}<span class="when">${new Date(x.startedAt).toLocaleString()}</span></div>`).join("") : '<p class="muted">No runs yet.</p>';
+  const html = h.length ? h.map((x) => `<div class="hist ${state && state.runId === x.runId ? "cur" : ""}" role="button" tabindex="0" data-run="${esc(x.runId)}" title="Open ${esc(x.runId)}"><span>${x.runId}</span><span class="badge ${x.status === "sent" ? "done" : x.status}">${x.status}</span>${x.totals ? `<span>$${fmt(x.totals[0])} / $${fmt(x.totals[1])} / $${fmt(x.totals[2])}</span>` : ""}<span class="when">${new Date(x.startedAt).toLocaleString()}</span>${!hasSnapshot(x.runId) && ["running", "blocked", "awaiting"].includes(x.status) ? `<button class="danger sm" data-abandon="${esc(x.runId)}" title="Details were not saved for this run (older demo version)">Abandon</button>` : ""}</div>`).join("") : '<p class="muted">No runs yet.</p>';
   $("history").innerHTML = html; $("landing-history").innerHTML = h.length ? `<h3 class="muted">Past runs</h3>${html}` : "";
+}
+// Back to the entry page. Saves the current run exactly as it stands (it stays in Past runs and can be reopened),
+// stops the runner and any in-flight polling from touching it, and clears the console so a new run starts clean.
+function goHome() {
+  if (state) save();
+  loopToken++; state = null; localStorage.removeItem(KEY);
+  net?.destroy(); net = null; nodesDS = edgesDS = null;
+  $("console").hidden = true; $("landing").hidden = false; $("hdr").hidden = true; $("drawer").hidden = true; $("api-notice").hidden = true;
+  renderHistory();
+}
+function hasSnapshot(id) { return localStorage.getItem(RKEY + id) != null || (() => { try { return JSON.parse(localStorage.getItem(KEY))?.runId === id; } catch { return false; } })(); }
+// Open a past run from its saved snapshot. Never calls the API by itself: an awaiting run waits at the gate; finished runs are read-only.
+function openRun(id) {
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem(RKEY + id)); } catch {}
+  if (!s) { try { const c = JSON.parse(localStorage.getItem(KEY)); if (c?.runId === id) s = c; } catch {} }
+  if (!s) { alert(`The details of ${id} were not saved (it ran on an older version of the demo). Use "Abandon" to close it out.`); return; }
+  if (state && state.runId !== id && ["running", "blocked"].includes(state.status)) { state.status = "abandoned"; state.endedAt = now(); save(); }
+  loopToken++; net?.destroy(); net = null;
+  state = s; state._resumed = false; state._opened = true;
+  if (kb.ready) { resetStore(); if (state.fixTurtle) applyFix(state.fixTurtle); }
+  localStorage.setItem(KEY, JSON.stringify(state));
+  showConsole(); render();
+  if (["running", "blocked", "awaiting", "failed"].includes(state.status)) loop();
+}
+function abandonRun(id) {
+  const h = loadHistory(); const x = h.find((r) => r.runId === id); if (!x) return;
+  x.status = "abandoned"; localStorage.setItem(HKEY, JSON.stringify(h));
+  try { const s = JSON.parse(localStorage.getItem(RKEY + id)); if (s) { s.status = "abandoned"; s.endedAt = now(); localStorage.setItem(RKEY + id, JSON.stringify(s)); } } catch {}
+  renderHistory();
 }
 function openDrawer(html) { $("drawer-body").innerHTML = html; $("drawer").hidden = false; }
 function showConsole() { $("landing").hidden = true; $("console").hidden = false; }
@@ -397,17 +436,20 @@ function tick() { if (!state) return; const e = Math.floor(((state.endedAt || no
 document.addEventListener("click", (ev) => {
   const t = ev.target;
   if (t.id === "btn-upload") { if (SHACL) start(); }
-  else if (t.id === "btn-new") { if (state && ["running", "blocked", "awaiting"].includes(state.status)) { state.status = "abandoned"; state.endedAt = now(); updateHistory(); } loopToken++; localStorage.removeItem(KEY); state = null; net?.destroy(); net = null; $("console").hidden = true; $("landing").hidden = false; $("hdr").hidden = true; renderHistory(); }
+  else if (t.id === "btn-new") goHome();
   else if (t.id === "btn-pause") { state.paused = !state.paused; state._resumed = false; save(); render(); if (!state.paused) loop(); }
   else if (t.id === "btn-retry") retryFailed();
   else if (t.id === "btn-approve") approve(true);
   else if (t.id === "btn-reject") approve(false);
   else if (t.dataset.fix) fixIssue(t.dataset.fix);
   else if (t.dataset.pv) { const [k, i] = t.dataset.pv.split(":"); provenance(k, +i); }
+  else if (t.dataset.abandon) { ev.stopPropagation(); abandonRun(t.dataset.abandon); }
+  else if (t.closest && t.closest("[data-run]")) openRun(t.closest("[data-run]").dataset.run);
   else if (t.id === "btn-about") openDrawer($("about-tpl").innerHTML);
   else if (t.id === "cq-run") runSparql();
   else if (t.id === "drawer-x") $("drawer").hidden = true;
 });
+document.addEventListener("keydown", (ev) => { const r = ev.target.closest && ev.target.closest("[data-run]"); if (r && ev.target === r && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); openRun(r.dataset.run); } });
 $("tog-fail").addEventListener("change", (e) => { if (state) { state.failArmed = e.target.checked; save(); } });
 $("fail-mode").addEventListener("change", (e) => { if (state) { state.failMode = e.target.value; save(); } });
 setInterval(tick, 500);
