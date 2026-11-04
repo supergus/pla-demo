@@ -27,7 +27,7 @@ export async function run({ env, input, ai }) {
   const written = !none && d.score >= MATCH_SCORE_MIN;
   return {
     line, product: none ? null : d.product_id, matchedProduct: none ? null : `ex:${d.product_id}`,
-    score: d.score, method: `llm-similarity (Llama 3.3 70B): ${d.method.trim()}`, rationale: d.rationale || null,
+    score: d.score, method: `${d.method.trim()} (Llama 3.3 70B)`, rationale: d.rationale || null,
     confidence: none ? "none" : d.score >= 0.85 ? "high" : d.score >= MATCH_SCORE_MIN ? "medium" : "low",
     written, // false => estimator must confirm (raise an Issue)
   };
