@@ -8,7 +8,7 @@ st = lambda p: p.evaluate("window.__pla.state && JSON.parse(JSON.stringify(windo
 with sync_playwright() as pw:
     b = pw.chromium.launch(); p = b.new_page(viewport={"width": 1280, "height": 1000})
     p.on("console", lambda m: m.type == "error" and errs.append(m.text)); p.on("pageerror", lambda e: errs.append(str(e)))
-    p.goto(URL); p.wait_for_load_state("networkidle"); p.screenshot(path=f"{SH}/01-landing.png")
+    p.goto(URL); p.wait_for_load_state("networkidle"); p.wait_for_selector("#btn-upload:not([disabled])"); p.screenshot(path=f"{SH}/01-landing.png")
     p.click("#btn-upload")
     p.wait_for_function("window.__pla.state && window.__pla.state.runs.length >= 1")
     rid = st(p)["runId"]; p.reload(); p.wait_for_function("window.__pla.state")
@@ -37,7 +37,7 @@ with sync_playwright() as pw:
     p.click("#btn-approve"); p.wait_for_function("window.__pla.state.status === 'sent'", timeout=20000)
     check("approve -> sent (simulated)", True); p.screenshot(path=f"{SH}/06-sent.png", full_page=True)
     # persistent failure path
-    p.click("#btn-new"); p.click("#btn-upload"); p.select_option("#fail-mode", "persistent"); p.check("#tog-fail")
+    p.click("#btn-new"); p.wait_for_selector("#btn-upload:not([disabled])"); p.click("#btn-upload"); p.select_option("#fail-mode", "persistent"); p.check("#tog-fail")
     p.wait_for_function("window.__pla.state.status === 'failed'", timeout=60000)
     s = st(p); check("persistent failure exhausts 4 attempts -> failed", sum(1 for r in s["runs"] if not r["ok"]) == 4)
     p.screenshot(path=f"{SH}/07-failed-exhausted.png", full_page=True)
