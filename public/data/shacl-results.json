@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-04T09:17:44",
+  "generated": "2026-11-04T10:14:58",
   "engine": "pySHACL",
   "fixTurtle": "@prefix rfq: <https://supergus.github.io/rfq-ontology/ns#> .\n@prefix ex: <https://supergus.github.io/rfq-ontology/data#> .\n@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\nex:RFQ-1002-DT rfq:hasIncoterm rfq:DAP .\nex:RFQ-1002 rfq:hasTechnicalRequirement ex:SPEC-1002-A36 .\nex:SPEC-1002-A36 a rfq:MaterialSpec ; rdfs:label \"ASTM A36 steel plate\" .\n",
   "before": {

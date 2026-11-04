@@ -1,0 +1,5 @@
+n3 2.13.12 MIT
+shacl-engine 1.1.3 MIT
+rdf-ext 2.6.0 MIT
+oxigraph 0.5.13 MIT OR Apache-2.0
+vis-network 9.1.9 (Apache-2.0 OR MIT)
