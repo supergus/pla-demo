@@ -104,6 +104,8 @@ with sync_playwright() as pw:
     check("manual retry continues the run", True)
     check("run history lists runs", p.locator("#history .hist").count() >= 2)
     p.click("#btn-about"); p.screenshot(path=f"{SH}/08-about.png")
+    lk = p.locator("#drawer a[href='https://github.com/supergus/rfq-ontology/blob/main/docs/PROJECT.md']")
+    check("About pane links the project write-up (PROJECT.md, new tab)", lk.count() == 1 and lk.get_attribute("target") == "_blank" and "PROJECT.md" in lk.inner_text())
     b.close()
     # ---------- fallback scenarios (mocked /api) ----------
     for mode, reason in [("resting", "resting"), ("unauthorized", "unauthorized"), ("timeout", "timeout"), ("network", "network")]:
