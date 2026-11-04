@@ -9,6 +9,7 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&l
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const now = () => Date.now();
 
+window.__pla = { get state() { return state; } };
 let SHACL = null, state = null, loopToken = 0, net = null, nodesDS = null, edgesDS = null;
 
 // ---------- tools ----------
@@ -259,7 +260,7 @@ function tick() { if (!state) return; const e = Math.floor(((state.endedAt || no
 // ---------- wiring ----------
 document.addEventListener("click", (ev) => {
   const t = ev.target;
-  if (t.id === "btn-upload") start();
+  if (t.id === "btn-upload") { if (SHACL) start(); }
   else if (t.id === "btn-new") { if (state && ["running", "blocked", "awaiting"].includes(state.status)) { state.status = "abandoned"; state.endedAt = now(); updateHistory(); } loopToken++; localStorage.removeItem(KEY); state = null; net?.destroy(); net = null; $("console").hidden = true; $("landing").hidden = false; $("hdr").hidden = true; renderHistory(); }
   else if (t.id === "btn-pause") { state.paused = !state.paused; state._resumed = false; save(); render(); if (!state.paused) loop(); }
   else if (t.id === "btn-retry") retryFailed();
@@ -275,9 +276,10 @@ $("fail-mode").addEventListener("change", (e) => { if (state) { state.failMode =
 setInterval(tick, 500);
 
 (async function init() {
+  $("btn-upload").disabled = true;
   SHACL = await (await fetch("data/shacl-results.json")).json();
+  $("btn-upload").disabled = false;
   try { state = JSON.parse(localStorage.getItem(KEY)); } catch { state = null; }
   if (state && state.runId) { state._resumed = ["running", "blocked", "awaiting", "failed"].includes(state.status); showConsole(); render(); loop(); }
   else { state = null; renderHistory(); }
-  window.__pla = { get state() { return state; } };
 })();
