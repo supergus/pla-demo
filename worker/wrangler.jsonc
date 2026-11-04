@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "rfq-pla",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-01",
+  "account_id": "3d48bf20abae22656f3904dbd2feb8b7",
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": true },
+  "ai": { "binding": "AI" },
+  "d1_databases": [
+    { "binding": "RUNS_DB", "database_name": "pla-runs", "database_id": "d3b3eb33-fdef-43fc-9ae3-b9237f211a16", "migrations_dir": "migrations" }
+  ],
+  "durable_objects": { "bindings": [{ "name": "BUDGET", "class_name": "Budget" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Budget"] }],
+  "workflows": [{ "name": "rfq-pla-run", "binding": "RUN_WORKFLOW", "class_name": "RunWorkflow" }]
+  // Secrets (set with `wrangler secret put`, never in repo): COOKIE_KEY, COOKIE_KEY_PREVIEW
+  // Optional var DAILY_BUDGET_USD (can only lower the $20 cap).
+}

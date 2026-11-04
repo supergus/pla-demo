@@ -91,6 +91,11 @@ export async function onRequest(context) {
   }
 
   if (env.COOKIE_KEY && (await verifySession(env.COOKIE_KEY, getCookie(request, COOKIE)))) {
+    if (url.pathname.startsWith("/api/")) {
+      // Forward to the rfq-pla Worker via the PLA service binding (configured on the Pages project).
+      if (!env.PLA) return new Response(JSON.stringify({ error: "api unavailable" }), { status: 503, headers: { "Content-Type": "application/json", "X-Robots-Tag": ROBOTS } });
+      return env.PLA.fetch(request);
+    }
     const res = await next();
     const out = new Response(res.body, res);
     out.headers.set("X-Robots-Tag", ROBOTS);

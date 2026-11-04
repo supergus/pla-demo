@@ -33,4 +33,18 @@ dbBroken = true;
 assert.equal((await login("nope", "198.51.100.8")).status, 401);
 assert.equal((await onRequest({ env: { ...env, PLA_SECRET: undefined }, next, request: req("/__login", { method: "POST", body: new URLSearchParams({ secret: "" }) }) })).status, 401);
 assert.equal((await onRequest({ env: { ...env, COOKIE_KEY: undefined }, next, request: req("/", { headers: { Cookie: ck.split(";")[0] } }) })).status, 401);
+// /api/* forwarding to the PLA service binding (only after a valid cookie)
+{
+  const seen = [];
+  const PLA = { fetch: async (rq) => { seen.push(new URL(rq.url).pathname); return new Response('{"runId":"r-x"}', { status: 202 }); } };
+  const env2 = { ...env, PLA }; const c = ck.split(";")[0];
+  let a = await onRequest({ env: env2, next, request: req("/api/run", { method: "POST", body: "{}" }) });
+  assert.equal(a.status, 401); assert.equal(seen.length, 0);
+  a = await onRequest({ env: env2, next, request: req("/api/run", { method: "POST", body: "{}", headers: { Cookie: c } }) });
+  assert.equal(a.status, 202); assert.deepEqual(seen, ["/api/run"]);
+  a = await onRequest({ env, next, request: req("/api/run/r-x", { headers: { Cookie: c } }) });
+  assert.equal(a.status, 503);
+  a = await onRequest({ env: env2, next, request: req("/app.js", { headers: { Cookie: c } }) });
+  assert.equal(await a.text(), "SECRET CONTENT"); assert.equal(seen.length, 1);
+}
 console.log("middleware tests ok");
