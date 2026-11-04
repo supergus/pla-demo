@@ -1,0 +1,13 @@
+# Q3: Recompute each LTA year: (prev - carveOut/FX)*(1-rate) + carveOut/FX  vs stored year price
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX ex:   <http://pcaq.local/demo#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl:  <http://www.w3.org/2002/07/owl#>
+SELECT ?line ?year ?rate ?prev ?stored ?recomputed ?ok WHERE {
+  ?wb pcaq:hasFX/pcaq:fxFactor ?fx .
+  ?line pcaq:inWorkbook ?wb ; pcaq:purchasedCarveOut ?carve ; pcaq:hasYearPrice ?yp , ?pp .
+  ?yp pcaq:yearIndex ?year ; pcaq:amount ?stored ; pcaq:afterLTAStep/pcaq:ltaRate ?rate .
+  ?pp pcaq:yearIndex ?py ; pcaq:amount ?prev . FILTER(?py = ?year - 1)
+  BIND(((?prev/?fx - ?carve/?fx) * (1 - ?rate) + ?carve/?fx) * ?fx AS ?recomputed)
+  BIND(ABS(?recomputed - ?stored) < 0.001 AS ?ok)
+} ORDER BY ?line ?year

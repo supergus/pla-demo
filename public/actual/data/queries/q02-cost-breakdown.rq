@@ -1,0 +1,11 @@
+# Q2: Cost breakdown elements per part line (with Costing_Summary column lineage)
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX ex:   <http://pcaq.local/demo#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl:  <http://www.w3.org/2002/07/owl#>
+SELECT ?line ?element ?amount ?fromCol WHERE {
+  ?line pcaq:hasCostBreakdown/pcaq:hasCostElement ?ce .
+  ?ce a ?cls ; pcaq:amount ?amount . ?cls rdfs:subClassOf* pcaq:CostElement ; rdfs:label ?element .
+  FILTER(?cls != pcaq:CostElement && ?cls != pcaq:MaterialCost && ?cls != pcaq:ConversionCost && ?cls != pcaq:CostRollup)
+  OPTIONAL { ?ce pcaq:derivedFromEstimateColumn ?fromCol }
+} ORDER BY ?line ?element

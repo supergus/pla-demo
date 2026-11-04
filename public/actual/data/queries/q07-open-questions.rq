@@ -1,0 +1,6 @@
+# Q7: Open questions recorded on ontology terms (what the CER export / a human must answer)
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX ex:   <http://pcaq.local/demo#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl:  <http://www.w3.org/2002/07/owl#>
+SELECT ?term ?label ?question WHERE { ?term pcaq:openQuestion ?question . OPTIONAL { ?term rdfs:label ?label } } ORDER BY ?term

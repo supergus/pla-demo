@@ -10,3 +10,4 @@ jobs:
       - run: node tools/test-cost.mjs
       - run: node tests/gate.test.mjs
       - run: node tests/middleware.test.mjs
+      - run: node tests/actual-gated.test.mjs

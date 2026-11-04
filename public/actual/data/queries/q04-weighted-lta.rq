@@ -1,0 +1,11 @@
+# Q4: Program-weighted LTA % per year = SUM(sales x lta%) / SUM(sales)  (Volume LTA Royalty row 46)
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX ex:   <http://pcaq.local/demo#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl:  <http://www.w3.org/2002/07/owl#>
+SELECT ?year (SUM(?sales * ?rate) / SUM(?sales) AS ?weightedLTA) (SUM(?sales) AS ?totalSales) WHERE {
+  ?line pcaq:hasYearPrice ?yp ; pcaq:hasYearVolume ?yv .
+  ?yp pcaq:yearIndex ?year ; pcaq:amount ?price ; pcaq:afterLTAStep/pcaq:ltaRate ?rate .
+  ?yv pcaq:yearIndex ?year ; pcaq:volume ?vol .
+  BIND(?price * ?vol AS ?sales)
+} GROUP BY ?year ORDER BY ?year

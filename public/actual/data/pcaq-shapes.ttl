@@ -1,0 +1,36 @@
+# SHACL completeness shapes for PCAQ part lines (draft, private)
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix pcaq: <http://pcaq.local/ns#> .
+@prefix shp:  <http://pcaq.local/shapes#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+shp:PartLineShape a sh:NodeShape ;
+    sh:targetClass pcaq:PartLine ;
+    sh:property
+      [ sh:path pcaq:forPart ; sh:minCount 1 ; sh:maxCount 1 ; sh:message "PART LINE has no part" ] ,
+      [ sh:path pcaq:madeAtPlant ; sh:class pcaq:Plant ; sh:minCount 1 ; sh:message "PART LINE has no plant" ] ,
+      [ sh:path pcaq:averageAnnualVolume ; sh:minCount 1 ; sh:message "PART LINE has no average annual volume" ] ,
+      [ sh:path pcaq:hasCostBreakdown ; sh:class pcaq:CostBreakdown ; sh:minCount 1 ; sh:maxCount 1 ; sh:message "PART LINE has no cost breakdown" ] ,
+      [ sh:path pcaq:hasBasePrice ; sh:class pcaq:BaseSellingPrice ; sh:minCount 1 ; sh:message "PART LINE has no base selling price (N)" ] ,
+      [ sh:path pcaq:hasLTASchedule ; sh:class pcaq:LTASchedule ; sh:minCount 1 ; sh:message "PART LINE has no LTA schedule" ] ,
+      [ sh:path pcaq:hasYearPrice ; sh:class pcaq:YearPrice ; sh:minCount 1 ; sh:message "PART LINE has no yearly selling prices" ] .
+
+shp:CostingSummaryLineShape a sh:NodeShape ;
+    sh:targetClass pcaq:PartLine ;
+    sh:message "PART LINE entered via Costing_Summary but has no imported estimate" ;
+    sh:or ( [ sh:not [ sh:property [ sh:path pcaq:costEntryMode ; sh:hasValue pcaq:ViaCostingSummary ] ] ]
+            [ sh:property [ sh:path pcaq:hasEstimate ; sh:minCount 1 ] ] ) .
+
+shp:YearPriceShape a sh:NodeShape ;
+    sh:targetClass pcaq:YearPrice ;
+    sh:property [ sh:path pcaq:yearIndex ; sh:datatype xsd:integer ; sh:minInclusive 1 ; sh:maxInclusive 8 ; sh:minCount 1 ; sh:message "YEAR PRICE needs year index 1..8" ] ,
+                [ sh:path pcaq:amount ; sh:minCount 1 ; sh:maxCount 1 ; sh:message "YEAR PRICE has no amount" ] .
+
+shp:LTAStepShape a sh:NodeShape ;
+    sh:targetClass pcaq:LTAStep ;
+    sh:property [ sh:path pcaq:ltaRate ; sh:minInclusive 0 ; sh:maxInclusive 0.2 ; sh:minCount 1 ; sh:message "LTA STEP rate missing or outside 0..20%" ] ,
+                [ sh:path pcaq:yearIndex ; sh:minInclusive 2 ; sh:maxInclusive 8 ; sh:minCount 1 ; sh:message "LTA STEP year must be 2..8" ] .
+
+shp:EstimateShape a sh:NodeShape ;
+    sh:targetClass pcaq:CostEstimate ;
+    sh:property [ sh:path pcaq:importedFrom ; sh:class pcaq:ImportedEstimateSource ; sh:minCount 1 ; sh:message "ESTIMATE has no import source (CER provenance)" ] .
