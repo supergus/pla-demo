@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PLA Console · RFQ-to-Quote demo</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+</head><body>
+<header class="top">
+  <div class="brand">PLA Console <span class="sub">Program Lifecycle Agent · RFQ-to-Quote demo v1</span></div>
+  <div class="hdr" id="hdr" hidden>
+    <span>Program <b id="h-prog">RFQ-1002</b></span>
+    <span>Stage <b id="h-stage">–</b></span>
+    <span class="badge" id="h-status">idle</span>
+    <span>Elapsed <b id="h-elapsed">0:00</b></span>
+    <span class="runid" id="h-run"></span>
+  </div>
+  <button class="ghost" id="btn-about">About</button>
+</header>
+
+<section id="landing" class="landing">
+  <h1>RFQ-to-Quote, run by an agent you can watch</h1>
+  <p>A managed OWL ontology gives the Program Lifecycle Agent (PLA) a shared vocabulary for the quote process.
+     Start a run and watch every tool call, issue, fact and number as it happens.</p>
+  <button id="btn-upload" class="big">⬆ Upload RFQ package</button>
+  <p class="fine">Nothing is uploaded. This starts a scripted PLA run on the sample package RFQ-1002 (Northwind Agricultural Equipment).</p>
+  <div id="landing-history"></div>
+</section>
+
+<main id="console" hidden>
+  <div class="controls">
+    <button id="btn-pause">Pause</button>
+    <button id="btn-retry" disabled>Retry failed step</button>
+    <label class="tog"><input type="checkbox" id="tog-fail"> Simulate failure</label>
+    <select id="fail-mode" title="Failure mode"><option value="transient">transient (fails 2×, then recovers)</option><option value="persistent">persistent (exhausts retries)</option></select>
+    <span class="spacer"></span>
+    <button id="btn-new" class="ghost">New run</button>
+  </div>
+  <div id="banner" class="banner" hidden></div>
+  <ol class="pipeline" id="pipeline"></ol>
+  <div class="grid">
+    <section class="panel issues"><h2>Issues &amp; tasks <span id="issue-count" class="count"></span></h2><div id="issues"></div></section>
+    <section class="panel graph"><h2>Live RFQ graph <span class="hint">facts added by the PLA</span></h2><div id="graph"></div></section>
+    <section class="panel log"><h2>Tool-run log</h2><div id="log"></div></section>
+    <section class="panel quote"><h2>Quote build-up <span class="hint">click a number for provenance</span></h2><div id="quote"><p class="muted">Not costed yet.</p></div><div id="gate"></div></section>
+    <section class="panel history"><h2>Run history</h2><div id="history"></div></section>
+  </div>
+</main>
+
+<aside id="drawer" class="drawer" hidden><button class="x" id="drawer-x">✕</button><div id="drawer-body"></div></aside>
+<template id="about-tpl">
+  <h2>About this demo</h2>
+  <p>A live management console for one PLA run on a sample RFQ. Everything runs in your browser. There is no backend, no API key and no AI call in v1, and nothing is sent anywhere.</p>
+  <h3>Badges</h3>
+  <ul>
+    <li><span class="b det">deterministic</span> Plain code with the same answer every time. <code>cost_quote</code> is a live JavaScript port of <code>scripts/quote.py</code>, run in your browser.</li>
+    <li><span class="b ai">AI</span> Tools that will be LLM calls (Workers AI, Llama 3.3 70B) in a later version.</li>
+    <li><span class="b canned">canned</span> In v1 the AI tools (<code>parse_rfq_document</code>, <code>match_library_part</code>) return pre-written output. No model is called.</li>
+    <li><span class="b replay">replayed</span> <code>validate_rfq</code> shows SHACL results computed at build time with pySHACL against the repo's real shapes and RFQ-1002 data (before and after the fixes). The browser does not run SHACL in v1.</li>
+  </ul>
+  <h3>Demo assumptions</h3>
+  <ul>
+    <li>RFQ-1002 (part BRK-200) is priced as a repeat of the BRK-100 bracket, with the same BOM, routing, rates and quantity breaks (100 / 1,000 / 10,000), so the numbers match the repo's worked example. The repo's RFQ-1002 data file has a single 500 break.</li>
+    <li>Run state is saved to your browser's localStorage after every step, so a refresh resumes the run.</li>
+    <li>"Send quote" is simulated.</li>
+  </ul>
+  <h3>Links</h3>
+  <ul>
+    <li><a href="https://github.com/supergus/rfq-ontology" target="_blank" rel="noopener">supergus/rfq-ontology</a>: the ontology, SHACL shapes, competency queries and cost calculator</li>
+    <li><a href="https://github.com/supergus/rfq-demo" target="_blank" rel="noopener">supergus/rfq-demo</a>: this console</li>
+  </ul>
+</template>
+<script type="module" src="app.js"></script>
+</body></html>

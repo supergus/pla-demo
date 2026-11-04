@@ -1,0 +1,44 @@
+:root{--bg:#0f1419;--panel:#171d25;--line:#273141;--fg:#dce3ea;--mut:#8593a3;--acc:#4da3ff;--ok:#3fb27f;--warn:#e0a63a;--bad:#e5534b;--ai:#a371f7;--det:#3fb2c9;--canned:#c69026}
+*{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--fg)}
+a{color:var(--acc)}code{background:#0b0f14;padding:1px 4px;border-radius:4px;font-size:12px}
+button,select{background:#212a36;color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:6px 12px;font:inherit;cursor:pointer}
+button:hover:not(:disabled){border-color:var(--acc)}button:disabled{opacity:.45;cursor:default}
+button.ghost{background:transparent}button.primary{background:var(--acc);color:#04111f;border-color:var(--acc);font-weight:600}
+button.danger{border-color:var(--bad);color:#ffb4ae}
+.top{display:flex;align-items:center;gap:20px;padding:10px 18px;border-bottom:1px solid var(--line);background:#121820;position:sticky;top:0;z-index:5}
+.brand{font-weight:700;font-size:16px}.brand .sub{font-weight:400;color:var(--mut);font-size:12px;margin-left:8px}
+.hdr{display:flex;gap:18px;align-items:center;flex:1;color:var(--mut)}.hdr b{color:var(--fg)}.runid{font-size:11px}
+.badge{padding:2px 10px;border-radius:12px;font-weight:600;font-size:12px;background:#2b3442}
+.badge.running{background:#173a5e;color:#9ccfff}.badge.blocked,.badge.awaiting{background:#4a3a12;color:#ffd98a}.badge.failed{background:#4d1d1b;color:#ffb4ae}.badge.done,.badge.sent{background:#123d2a;color:#93e6bd}.badge.paused{background:#333;color:#ccc}.badge.rejected{background:#4d1d1b;color:#ffb4ae}
+.landing{max-width:720px;margin:12vh auto;text-align:center;padding:0 20px}.landing h1{font-size:30px}.landing p{color:var(--mut)}
+.big{font-size:20px;padding:18px 40px;background:var(--acc);color:#04111f;border:0;font-weight:700;border-radius:10px;margin:20px 0 6px}
+.fine{font-size:12px}
+main{padding:12px 18px}.controls{display:flex;gap:10px;align-items:center;margin-bottom:10px}.spacer{flex:1}.tog{display:flex;gap:6px;align-items:center}
+.banner{background:#173a5e;border:1px solid #275a8a;padding:8px 12px;border-radius:6px;margin-bottom:10px}
+.pipeline{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;list-style:none;padding:0;margin:0 0 12px}
+.pipeline li{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;border-top:3px solid #3a4553}
+.pipeline li .n{font-weight:600;text-transform:capitalize}.pipeline li .s{font-size:12px;color:var(--mut)}
+.pipeline li.running{border-top-color:var(--acc)}.pipeline li.done{border-top-color:var(--ok)}.pipeline li.failed{border-top-color:var(--bad)}.pipeline li.retrying{border-top-color:var(--warn)}.pipeline li.blocked{border-top-color:var(--warn)}
+.pipeline li.running .s::before{content:"● ";color:var(--acc);animation:p 1s infinite}@keyframes p{50%{opacity:.2}}
+.grid{display:grid;grid-template-columns:330px 1fr 1fr;grid-template-areas:"issues graph graph" "log log quote" "history history quote";gap:12px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-width:0}
+.panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin:0 0 8px}.hint{text-transform:none;letter-spacing:0;font-weight:400;font-size:11px;margin-left:6px}
+.issues{grid-area:issues;max-height:420px;overflow:auto}.graph{grid-area:graph}#graph{height:380px}.log{grid-area:log;max-height:560px;overflow:auto}.quote{grid-area:quote}.history{grid-area:history}
+.count{background:#2b3442;border-radius:10px;padding:0 7px;color:var(--fg)}
+.issue{border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:6px;padding:8px;margin-bottom:8px}.issue.resolved{border-left-color:var(--ok);opacity:.6}
+.issue .t{font-weight:600}.issue .m{font-size:12px;color:var(--mut)}.issue select,.issue button{margin-top:6px;padding:4px 8px;font-size:12px}
+.own{font-size:11px;padding:1px 6px;border-radius:8px;background:#2b3442;margin-left:4px}.own.human{background:#4a3a12;color:#ffd98a}
+.b{font-size:10px;padding:1px 6px;border-radius:8px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-right:4px}
+.b.det{background:#103842;color:var(--det)}.b.ai{background:#2e1f4d;color:var(--ai)}.b.canned{background:#3d2c0c;color:var(--canned)}.b.replay{background:#1b3346;color:#7cc0ff}
+.run{border:1px solid var(--line);border-radius:6px;margin-bottom:6px}.run summary{display:flex;gap:8px;align-items:center;padding:6px 8px;cursor:pointer;list-style:none}
+.run summary .nm{font-family:ui-monospace,monospace;font-weight:600}.run summary .r{margin-left:auto;color:var(--mut);font-size:12px}
+.run.ok summary{border-left:3px solid var(--ok)}.run.err summary{border-left:3px solid var(--bad)}.run.pending summary{border-left:3px solid var(--acc)}
+.run .body{padding:6px 10px;font-size:12px}.run pre{background:#0b0f14;padding:8px;border-radius:6px;overflow:auto;max-height:240px;font-size:11px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}th,td{padding:4px 6px;border-bottom:1px solid var(--line);text-align:right}th:first-child,td:first-child{text-align:left}
+th{color:var(--mut);font-weight:500;font-size:12px}td.pv{cursor:pointer;text-decoration:underline dotted var(--mut)}td.pv:hover{color:var(--acc)}tr.tot td{font-weight:700}
+.gate{margin-top:12px;padding:10px;border:1px dashed var(--warn);border-radius:8px}.gate .act{display:flex;gap:8px;margin-top:8px}
+.muted{color:var(--mut)}.hist{font-size:12px;border-bottom:1px solid var(--line);padding:4px 0;display:flex;gap:8px}.hist .when{color:var(--mut);margin-left:auto}
+.drawer{position:fixed;right:0;top:0;bottom:0;width:440px;background:#121820;border-left:1px solid var(--line);padding:18px;overflow:auto;z-index:10;box-shadow:-10px 0 30px #0008}
+.drawer .x{float:right}.drawer h3{font-size:13px;color:var(--mut);margin-top:16px}.drawer li{margin-bottom:6px}
+.chain{border-left:2px solid var(--acc);padding-left:10px;margin:6px 0;font-size:13px}
+@media (max-width:1100px){.grid{grid-template-columns:1fr;grid-template-areas:"issues" "graph" "log" "quote" "history"}}
