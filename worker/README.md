@@ -45,5 +45,5 @@ production and preview, set via the Pages API (`PATCH /accounts/:id/pages/projec
 If COOKIE_KEY is rotated on Pages, set the matching Worker secret too.
 
 ## Deploy / test
-`cd worker && npm ci && node --test tests/`. Merges to `main` touching `worker/**` run
+`cd worker && npm ci && node --test tests/*.test.mjs`. Merges to `main` touching `worker/**` run
 `.github/workflows/deploy-worker.yml` (tests → D1 migrations → `wrangler deploy`). PRs run tests only.
