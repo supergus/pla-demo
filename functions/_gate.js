@@ -38,3 +38,12 @@ export function safeNext(n) {
   if (n.startsWith("/__login")) return "/";
   return n;
 }
+
+// IPv6 clients are rate-limited per /64 (they often rotate within it). Returns the
+// /64 prefix ("a:b:c:d") or null to mean "match the exact IP" (IPv4 / short forms).
+export function rateKey(ip) {
+  if (typeof ip !== "string" || !ip.includes(":")) return null;
+  const head = ip.split("::")[0].split(":");
+  if (head.length < 4 || head.slice(0, 4).some((g) => !/^[0-9a-f]{1,4}$/i.test(g))) return null;
+  return head.slice(0, 4).join(":").toLowerCase();
+}

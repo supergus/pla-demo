@@ -1,5 +1,5 @@
 // "Secret?" gate for pla.chriscouch.net. Fails closed.
-import { safeEqual, signSession, verifySession, safeNext } from "./_gate.js";
+import { safeEqual, signSession, verifySession, safeNext, rateKey } from "./_gate.js";
 
 const COOKIE = "pla_session";
 const TTL_MS = 3 * 24 * 3600 * 1000;
@@ -42,7 +42,10 @@ async function recentFails(env, ip) {
   try {
     if (!env.DB) return 0;
     const since = new Date(Date.now() - WINDOW_MIN * 60000).toISOString();
-    const r = await env.DB.prepare("SELECT COUNT(*) AS n FROM access_log WHERE ip = ? AND ok = 0 AND ts > ?").bind(ip, since).first();
+    const pre = rateKey(ip);
+    const r = pre
+      ? await env.DB.prepare("SELECT COUNT(*) AS n FROM access_log WHERE ip LIKE ? AND ok = 0 AND ts > ?").bind(pre + ":%", since).first()
+      : await env.DB.prepare("SELECT COUNT(*) AS n FROM access_log WHERE ip = ? AND ok = 0 AND ts > ?").bind(ip, since).first();
     return (r && r.n) || 0;
   } catch (_) { return 0; }
 }
