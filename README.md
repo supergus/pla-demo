@@ -39,9 +39,14 @@ workbook + fictional demo data; no workbooks, prices, customers or CER numbers).
 https://pla.chriscouch.net/actual/ behind the same "Secret?" gate as the rest of the site (root `functions/_middleware.js`
 covers every path; `tests/actual-gated.test.mjs` checks it). The landing page links to it.
 
-## Leaf Tender at `/leaf-tender/`
-Guided leaf/gap completer (separate Worker `leaf-tender`, proxied behind the same Secret? gate via the `LEAF_TENDER` service binding). Synthetic demo data only. Do not edit `public/actual/` by
-hand; refresh it with `tools/sync-actual.sh /path/to/pcaq-viewer` (records the source commit in `public/actual/SOURCE.txt`).
+## Leaf Tender (separate product)
+Ontology management suite lives at **https://leaftender.chriscouch.net** (own Worker + D1 + suite login).
+`/leaf-tender/` on this site **302-redirects** there (no Secret? required; no `LEAF_TENDER` service binding).
+The landing-page "Leaf Tender" pill links directly to the new host.
+
+`/actual/` stays here for the quote demo. Do not edit `public/actual/` by hand; refresh it with
+`tools/sync-actual.sh /path/to/pcaq-viewer` (records the source commit in `public/actual/SOURCE.txt`).
+Leaf Tender links inside `/actual/` point at leaftender.chriscouch.net (cross-origin overlay needs a session there).
 
 ## Data and vendored libraries
 - `public/data/`: copied from rfq-ontology `ff69572` (ontology/*.ttl, data/*.ttl, shapes, queries/*.rq) plus

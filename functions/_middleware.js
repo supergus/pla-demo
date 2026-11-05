@@ -81,19 +81,26 @@ async function handleLogin(request, env) {
   });
 }
 
-// Keep upstream redirects inside the proxied prefix: a root-absolute Location such as
-// "/login" would otherwise land on the pla site gate's login instead of Leaf Tender's.
-export function prefixLocation(res, prefix) {
-  const loc = res.headers.get("Location");
-  if (!loc || !loc.startsWith("/") || loc.startsWith("//") || loc === prefix || loc.startsWith(prefix + "/")) return res;
-  const out = new Response(res.body, res);
-  out.headers.set("Location", prefix + loc);
-  return out;
+// Leaf Tender moved to its own host (suite login, not Secret? gate).
+const LEAF_TENDER_ORIGIN = "https://leaftender.chriscouch.net";
+
+export function leafTenderRedirect(url) {
+  const rest = url.pathname.slice("/leaf-tender".length) || "/";
+  const dest = LEAF_TENDER_ORIGIN + (rest.startsWith("/") ? rest : "/" + rest) + url.search;
+  return new Response(null, {
+    status: 302,
+    headers: { Location: dest, "Cache-Control": "no-store", "X-Robots-Tag": ROBOTS },
+  });
 }
 
 export async function onRequest(context) {
   const { request, env, next } = context;
   const url = new URL(request.url);
+
+  // Bifurcation: Leaf Tender is its own product — redirect even without Secret? session.
+  if (url.pathname === "/leaf-tender" || url.pathname.startsWith("/leaf-tender/")) {
+    return leafTenderRedirect(url);
+  }
 
   if (url.pathname === "/__login") {
     if (request.method === "POST") return handleLogin(request, env);
@@ -105,18 +112,6 @@ export async function onRequest(context) {
       // Forward to the rfq-pla Worker via the PLA service binding (configured on the Pages project).
       if (!env.PLA) return new Response(JSON.stringify({ error: "api unavailable" }), { status: 503, headers: { "Content-Type": "application/json", "X-Robots-Tag": ROBOTS } });
       return env.PLA.fetch(request);
-    }
-    if (url.pathname === "/leaf-tender" || url.pathname.startsWith("/leaf-tender/")) {
-      // Leaf Tender Worker (UI + /api). Strip the /leaf-tender prefix so the Worker serves from /.
-      if (!env.LEAF_TENDER) return new Response("Leaf Tender unavailable", { status: 503, headers: { "Content-Type": "text/plain", "X-Robots-Tag": ROBOTS } });
-      const u = new URL(request.url);
-      let rest = u.pathname.slice("/leaf-tender".length) || "/";
-      if (!rest.startsWith("/")) rest = "/" + rest;
-      u.pathname = rest;
-      const headers = new Headers(request.headers);
-      headers.set("X-Forwarded-Prefix", "/leaf-tender");
-      const res = await env.LEAF_TENDER.fetch(new Request(u.toString(), { method: request.method, headers, body: request.body, redirect: "manual" }));
-      return prefixLocation(res, "/leaf-tender");
     }
     const res = await next();
     const out = new Response(res.body, res);
