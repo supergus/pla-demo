@@ -7,7 +7,7 @@ WHERE {
   {
     SELECT ?line (COUNT(DISTINCT ?loc0) AS ?nLoc)
     WHERE {
-      ?line a pcaq:PartLine ; pcaq:hasShipmentLane ?lane0 .
+      ?line a pcaq:QuotedPart ; pcaq:hasShipmentLane ?lane0 .
       ?lane0 pcaq:shipsFromLocation ?loc0 .
     }
     GROUP BY ?line

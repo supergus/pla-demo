@@ -1,9 +1,9 @@
-# Q22: Owned in-transit qty/$ per part line (sum of its lanes)
+# Q22: Owned in-transit qty/$ per quoted part (sum of its lanes)
 PREFIX pcaq: <http://pcaq.local/ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 SELECT ?line ?lineLabel (SUM(?qty) AS ?qty) (SUM(?val) AS ?value) (SUM(?dock) AS ?ownedAtDockQty)
 WHERE {
-  ?line a pcaq:PartLine ; rdfs:label ?lineLabel ; pcaq:hasShipmentLane ?lane .
+  ?line a pcaq:QuotedPart ; rdfs:label ?lineLabel ; pcaq:hasShipmentLane ?lane .
   ?lane pcaq:ownedInTransitQty ?qty ; pcaq:ownedInTransitValue ?val .
   OPTIONAL { ?lane pcaq:ownedAtDockQty ?dock }
 }

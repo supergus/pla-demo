@@ -19,7 +19,7 @@ WHERE {
   FILTER(?asOf >= ?effFrom)
   FILTER(!BOUND(?effTo) || ?asOf <= ?effTo)
 
-  ?line a pcaq:PartLine ; rdfs:label ?lineLabel ; pcaq:hasShipmentLane ?lane ;
+  ?line a pcaq:QuotedPart ; rdfs:label ?lineLabel ; pcaq:hasShipmentLane ?lane ;
         pcaq:averageAnnualVolume ?vol .
   ?lane rdfs:label ?laneLabel ; pcaq:shipsFromLocation ?loc .
   ?loc pcaq:locationCountry ?country ; pcaq:locationCity ?city .

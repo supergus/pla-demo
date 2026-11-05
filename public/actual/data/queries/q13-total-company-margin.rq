@@ -13,7 +13,7 @@ WHERE {
       }
     } GROUP BY ?line
   }
-  ?line a pcaq:PartLine ; rdfs:label ?fgLabel ;
+  ?line a pcaq:QuotedPart ; rdfs:label ?fgLabel ;
         pcaq:hasFinishedGoodsMargin ?fg ;
         pcaq:hasIntercompanyMargin ?ic ;
         pcaq:hasTotalCompanyMargin ?tot .

@@ -80,28 +80,28 @@ pcaq:inflationRate a owl:DatatypeProperty ; rdfs:label "inflation rate" ; rdfs:d
 pcaq:productivityRate a owl:DatatypeProperty ; rdfs:label "productivity rate" ; rdfs:domain pcaq:EconomicAssumption ; rdfs:range xsd:decimal .
 
 # =====================================================================
-# Part lines (Parts Data rows; RFQ lines)
+# Quoted parts (Parts Data rows; quoted parts)
 # =====================================================================
 pcaq:Part a owl:Class ; rdfs:label "part" ; rdfs:comment "A part number being quoted." .
-pcaq:PartLine a owl:Class ; rdfs:label "part line (RFQ line)" ;
-    rdfs:comment "One Parts Data row inside a product-type section: the unit of costing and pricing." ;
+pcaq:QuotedPart a owl:Class ; rdfs:label "quoted part" ;
+    rdfs:comment "One row for a part number inside a specific quote workbook's Parts Data sheet: the unit of costing and pricing. The part number itself (the SKU) is pcaq:Part." ;
     pcaq:sourceSheet "Parts Data" ; pcaq:sourceColumn "rows 15-45 / 55-85" .
 
-pcaq:inWorkbook a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "in workbook" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:PCAQWorkbook .
-pcaq:forPart a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "for part" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:Part .
-pcaq:inProductType a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "in product type" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:ProductType .
-pcaq:inSubCategory a owl:ObjectProperty ; rdfs:label "in sub category" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:ProductSubCategory .
-pcaq:madeAtPlant a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "made at plant" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:Plant .
-pcaq:rfqNumber a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "RFQ #" ; rdfs:domain pcaq:PartLine ; rdfs:range xsd:string ; pcaq:sourceColumn "Parts Data!C" .
+pcaq:inWorkbook a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "in workbook" ; rdfs:domain pcaq:QuotedPart ; rdfs:range pcaq:PCAQWorkbook .
+pcaq:forPart a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "for part" ; rdfs:domain pcaq:QuotedPart ; rdfs:range pcaq:Part .
+pcaq:inProductType a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "in product type" ; rdfs:domain pcaq:QuotedPart ; rdfs:range pcaq:ProductType .
+pcaq:inSubCategory a owl:ObjectProperty ; rdfs:label "in sub category" ; rdfs:domain pcaq:QuotedPart ; rdfs:range pcaq:ProductSubCategory .
+pcaq:madeAtPlant a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "made at plant" ; rdfs:domain pcaq:QuotedPart ; rdfs:range pcaq:Plant .
+pcaq:rfqNumber a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "RFQ #" ; rdfs:domain pcaq:QuotedPart ; rdfs:range xsd:string ; pcaq:sourceColumn "Parts Data!C" .
 pcaq:partNumber a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "part number" ; rdfs:domain pcaq:Part ; rdfs:range xsd:string .
 pcaq:averageAnnualVolume a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "average annual volume" ;
-    rdfs:domain pcaq:PartLine ; rdfs:range xsd:decimal ; pcaq:sourceColumn "Costing_Summary!F" .
+    rdfs:domain pcaq:QuotedPart ; rdfs:range xsd:decimal ; pcaq:sourceColumn "Costing_Summary!F" .
 pcaq:rosTarget a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "ROS % target" ;
     rdfs:comment "Return-on-sales target used for the markup when no override price is set." ;
-    rdfs:domain pcaq:PartLine ; rdfs:range xsd:decimal ; pcaq:populationMode "human" .
+    rdfs:domain pcaq:QuotedPart ; rdfs:range xsd:decimal ; pcaq:populationMode "human" .
 
 pcaq:YearVolume a owl:Class ; rdfs:label "year volume" ; rdfs:comment "Forecast volume for one SOP-relative year." ; pcaq:sourceSheet "Volume LTA Royalty" , "Volume_export" .
-pcaq:hasYearVolume a owl:ObjectProperty ; rdfs:label "has year volume" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:YearVolume .
+pcaq:hasYearVolume a owl:ObjectProperty ; rdfs:label "has year volume" ; rdfs:domain pcaq:QuotedPart ; rdfs:range pcaq:YearVolume .
 pcaq:volume a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "volume" ; rdfs:domain pcaq:YearVolume ; rdfs:range xsd:decimal .
 
 pcaq:yearIndex a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "year index" ;
@@ -128,8 +128,8 @@ pcaq:estimateNumber a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label
 pcaq:partOfRequest a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "part of request" ; rdfs:domain pcaq:CostEstimate ; rdfs:range pcaq:CostEstimateRequest .
 pcaq:importedFrom a owl:ObjectProperty ; rdfs:subPropertyOf prov:wasDerivedFrom ; rdfs:label "imported from" ;
     rdfs:domain pcaq:CostEstimate ; rdfs:range pcaq:ImportedEstimateSource .
-pcaq:hasEstimate a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "has estimate" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:CostEstimate .
-pcaq:costEntryMode a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "cost entry mode" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:CostEntryMode .
+pcaq:hasEstimate a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "has estimate" ; rdfs:domain pcaq:QuotedPart ; rdfs:range pcaq:CostEstimate .
+pcaq:costEntryMode a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "cost entry mode" ; rdfs:domain pcaq:QuotedPart ; rdfs:range pcaq:CostEntryMode .
 
 pcaq:CostEntryMode a owl:Class ; rdfs:label "cost entry mode" ;
     rdfs:comment "How estimate numbers reached Parts Data cost columns." ;
@@ -142,8 +142,8 @@ pcaq:StaticValues a pcaq:CostEntryMode ; rdfs:label "static pasted values (C)" .
 # Cost breakdown (Parts Data Q..Y, fed by Costing_Summary)
 # =====================================================================
 pcaq:CostBreakdown a owl:Class ; rdfs:label "cost breakdown" ;
-    rdfs:comment "Per-piece cost decomposition for a part line (base year)." ; pcaq:sourceSheet "Parts Data" ; pcaq:sourceColumn "Q:Y" .
-pcaq:hasCostBreakdown a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "has cost breakdown" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:CostBreakdown .
+    rdfs:comment "Per-piece cost decomposition for a quoted part (base year)." ; pcaq:sourceSheet "Parts Data" ; pcaq:sourceColumn "Q:Y" .
+pcaq:hasCostBreakdown a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "has cost breakdown" ; rdfs:domain pcaq:QuotedPart ; rdfs:range pcaq:CostBreakdown .
 pcaq:hasCostElement a owl:ObjectProperty ; rdfs:label "has cost element" ; rdfs:domain pcaq:CostBreakdown ; rdfs:range pcaq:CostElement .
 pcaq:amount a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "amount (per piece, quote currency)" ; rdfs:range xsd:decimal .
 pcaq:derivedFromEstimateColumn a owl:DatatypeProperty ; rdfs:label "derived from estimate column" ; rdfs:domain pcaq:CostElement ; rdfs:range xsd:string .
@@ -197,14 +197,14 @@ pcaq:YearPrice a owl:Class ; rdfs:subClassOf pcaq:SellingPrice ; rdfs:label "yea
     rdfs:comment "Selling price after cumulative LTA for one SOP-relative year." ;
     pcaq:sourceColumn "Parts Data!AT,BA,BH,BO,BV,CC,CJ,CQ (Y1..Y8) <- Volume LTA Royalty!CR,CV,CZ,DD,DH,DL,DP,DT x Proposed!M7" .
 
-pcaq:hasBasePrice a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "has base price" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:BaseSellingPrice .
-pcaq:hasOverride a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "has override" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:PriceOverride .
-pcaq:hasYearPrice a owl:ObjectProperty ; rdfs:label "has year price" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:YearPrice .
+pcaq:hasBasePrice a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "has base price" ; rdfs:domain pcaq:QuotedPart ; rdfs:range pcaq:BaseSellingPrice .
+pcaq:hasOverride a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "has override" ; rdfs:domain pcaq:QuotedPart ; rdfs:range pcaq:PriceOverride .
+pcaq:hasYearPrice a owl:ObjectProperty ; rdfs:label "has year price" ; rdfs:domain pcaq:QuotedPart ; rdfs:range pcaq:YearPrice .
 pcaq:afterLTAStep a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "after LTA step" ; rdfs:domain pcaq:YearPrice ; rdfs:range pcaq:LTAStep .
 
 pcaq:purchasedCarveOut a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "purchased carve-out (AJ)" ;
     rdfs:comment "Per-piece purchased-component value excluded from LTA reductions (pass-through)." ;
-    rdfs:domain pcaq:PartLine ; rdfs:range xsd:decimal ; pcaq:sourceColumn "Parts Data!AJ" .
+    rdfs:domain pcaq:QuotedPart ; rdfs:range xsd:decimal ; pcaq:sourceColumn "Parts Data!AJ" .
 
 pcaq:FXConversion a owl:Class ; rdfs:label "FX conversion" ;
     rdfs:comment "Proposed!M7 factor between sheet currency and program currency (1 when equal)." ; pcaq:sourceColumn "Proposed!M7" .
@@ -215,7 +215,7 @@ pcaq:fxFactor a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "FX f
 # LTA (Volume LTA Royalty)
 # =====================================================================
 pcaq:LTASchedule a owl:Class ; rdfs:label "LTA schedule" ;
-    rdfs:comment "Customer long-term-agreement price-down schedule for a part line: LTA % per year Y2..Y8 applied to value-add only (price minus purchased carve-out), compounding." ;
+    rdfs:comment "Customer long-term-agreement price-down schedule for a quoted part: LTA % per year Y2..Y8 applied to value-add only (price minus purchased carve-out), compounding." ;
     pcaq:sourceSheet "Volume LTA Royalty" ; pcaq:sourceColumn "Q:W" .
 pcaq:LTAStep a owl:Class ; rdfs:label "LTA step" ;
     rdfs:comment "One year's LTA rate. price_y = (price_{y-1} - carveOut/FX) * (1 - rate) + carveOut/FX." .
@@ -224,7 +224,7 @@ pcaq:LTASource a owl:Class ; rdfs:label "LTA source" ;
 pcaq:ManualLTA a pcaq:LTASource ; rdfs:label "typed on Volume LTA Royalty" .
 pcaq:VolumeExportPivotLTA a pcaq:LTASource ; rdfs:label "GETPIVOTDATA from Volume_export" .
 
-pcaq:hasLTASchedule a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "has LTA schedule" ; rdfs:domain pcaq:PartLine ; rdfs:range pcaq:LTASchedule .
+pcaq:hasLTASchedule a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "has LTA schedule" ; rdfs:domain pcaq:QuotedPart ; rdfs:range pcaq:LTASchedule .
 pcaq:hasLTAStep a owl:ObjectProperty ; rdfs:label "has LTA step" ; rdfs:domain pcaq:LTASchedule ; rdfs:range pcaq:LTAStep .
 pcaq:ltaRate a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "LTA rate" ; rdfs:comment "Fraction (0.013 = 1.3%)." ; rdfs:domain pcaq:LTAStep ; rdfs:range xsd:decimal .
 pcaq:ltaSource a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "LTA source" ; rdfs:domain pcaq:LTAStep ; rdfs:range pcaq:LTASource .
@@ -278,7 +278,7 @@ pcaq:IntercompanySubcomponent a owl:Class ; rdfs:subClassOf pcaq:Part ; rdfs:lab
     rdfs:comment "Part produced by one plant/tax entity and transferred to another (intercompany sale), then rolled into a finished-good quote." .
 
 pcaq:IntercompanyTransfer a owl:Class ; rdfs:label "intercompany transfer" ;
-    rdfs:comment "Producing→receiving transfer of a subcomponent into a finished-good part line (or into another IC transfer via parentTransfer). Always has producingPlant and receivingPlant (use UnresolvedPlant placeholders when unknown)." ;
+    rdfs:comment "Producing→receiving transfer of a subcomponent into a finished-good quoted part (or into another IC transfer via parentTransfer). Always has producingPlant and receivingPlant (use UnresolvedPlant placeholders when unknown)." ;
     pcaq:sourceSheet "Parts Data" ; pcaq:sourceColumn "AK (IC Margin per part), AL (Inter Co @ avg vol), Q (purchased excl. IC); variant A: Costing_Summary ICC → AK" ;
     pcaq:openQuestion "Where producing-plant standard cost and markup % are maintained (SAP material valuation? IC price list?). Whether ICC is always identical to AK outside variant A." .
 
@@ -291,9 +291,9 @@ pcaq:receivingPlant a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "
 pcaq:ofSubcomponent a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "of subcomponent" ;
     rdfs:domain pcaq:IntercompanyTransfer ; rdfs:range pcaq:IntercompanySubcomponent .
 pcaq:intoFinishedGood a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "into finished good line" ;
-    rdfs:domain pcaq:IntercompanyTransfer ; rdfs:range pcaq:PartLine .
+    rdfs:domain pcaq:IntercompanyTransfer ; rdfs:range pcaq:QuotedPart .
 pcaq:hasIntercompanyTransfer a owl:ObjectProperty ; rdfs:label "has intercompany transfer" ;
-    rdfs:domain pcaq:PartLine ; rdfs:range pcaq:IntercompanyTransfer ;
+    rdfs:domain pcaq:QuotedPart ; rdfs:range pcaq:IntercompanyTransfer ;
     rdfs:comment "Direct (root) transfers into this FG line. Nested children are reached via ^parentTransfer*." .
 pcaq:parentTransfer a owl:ObjectProperty ; rdfs:label "parent transfer" ;
     rdfs:domain pcaq:IntercompanyTransfer ; rdfs:range pcaq:IntercompanyTransfer ;
@@ -332,11 +332,11 @@ pcaq:TotalCompanyMargin a owl:Class ; rdfs:subClassOf pcaq:MarginView ; rdfs:lab
     pcaq:openQuestion "Count only AK tree, or also interco buried inside purchased material Q?" .
 
 pcaq:hasFinishedGoodsMargin a owl:ObjectProperty ; rdfs:label "has finished-goods margin" ;
-    rdfs:domain pcaq:PartLine ; rdfs:range pcaq:FinishedGoodsMargin .
+    rdfs:domain pcaq:QuotedPart ; rdfs:range pcaq:FinishedGoodsMargin .
 pcaq:hasIntercompanyMargin a owl:ObjectProperty ; rdfs:label "has intercompany margin" ;
-    rdfs:domain pcaq:PartLine ; rdfs:range pcaq:IntercompanyMargin .
+    rdfs:domain pcaq:QuotedPart ; rdfs:range pcaq:IntercompanyMargin .
 pcaq:hasTotalCompanyMargin a owl:ObjectProperty ; rdfs:label "has total company margin" ;
-    rdfs:domain pcaq:PartLine ; rdfs:range pcaq:TotalCompanyMargin .
+    rdfs:domain pcaq:QuotedPart ; rdfs:range pcaq:TotalCompanyMargin .
 pcaq:marginAmount a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "margin amount" ;
     rdfs:domain pcaq:MarginView ; rdfs:range xsd:decimal .
 pcaq:marginScope a owl:DatatypeProperty ; rdfs:label "margin scope" ;
@@ -440,7 +440,7 @@ pcaq:AtPurchasePrice a pcaq:ValuationBasis ; rdfs:label "at purchase / invoice p
 
 # --- lane structure ---
 pcaq:hasShipmentLane a owl:ObjectProperty ; rdfs:label "has shipment lane" ;
-    rdfs:domain pcaq:PartLine ; rdfs:range pcaq:ShipmentLane .
+    rdfs:domain pcaq:QuotedPart ; rdfs:range pcaq:ShipmentLane .
 pcaq:laneFrom a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "lane from" ;
     rdfs:domain pcaq:ShipmentLane ; rdfs:range pcaq:Party .
 pcaq:laneTo a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "lane to" ;
