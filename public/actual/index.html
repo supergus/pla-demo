@@ -14,6 +14,7 @@
     <input id="filter" placeholder="filter classes / instances…">
     <div class="seg"><button id="mode-class" class="on">Classes</button><button id="mode-inst">Instances</button></div>
     <div id="tree"></div>
+    <div id="graph-legend" class="legend" aria-label="Graph legend"></div>
   </aside>
   <section id="center">
     <nav class="tabs"><button data-tab="graph" class="on">Graph</button><button data-tab="sparql">SPARQL</button><button data-tab="shacl">SHACL</button></nav>
@@ -32,7 +33,10 @@
       <div id="v-out"></div>
     </div>
   </section>
-  <aside id="right"><div id="detail" class="muted">Select a class or instance.</div></aside>
+  <aside id="right" aria-label="Detail pane">
+    <button type="button" id="right-toggle" class="pane-toggle" aria-expanded="true" aria-controls="right-body" title="Collapse detail pane">⟩</button>
+    <div id="right-body"><div id="detail" class="muted">Select a class or instance.</div></div>
+  </aside>
 </main>
 <script type="module" src="app.js"></script>
 </body></html>
