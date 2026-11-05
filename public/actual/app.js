@@ -153,6 +153,7 @@ function addNode(iri) {
   ensureNet(); if (nodes.get(iri)) return;
   const g = groupOf(iri); const st = GRAPH_STYLE.groups[g] || GRAPH_STYLE.groups.other;
   nodes.add({ id: iri, label: label(iri), title: short(iri), color: { background: st.color }, shape: st.shape });
+  if (usageOn) paintUsage([iri]);
 }
 function addEdge(s, p, o, kind = "property") {
   const id = s + "|" + p + "|" + o; if (edges.get(id)) return;
@@ -273,7 +274,7 @@ $("file").onchange = async (e) => { for (const f of e.target.files) extra.push({
     queries = await Promise.all(names.map(async (n) => { const t = await fetchText("queries/" + n); return { n, text: t, title: t.split("\n")[0].replace(/^#\s*/, "") }; }));
     $("q-pick").innerHTML = queries.map((q, i) => `<option value="${i}">${esc(q.title)}</option>`).join("");
     $("q-text").value = queries[0]?.text || "";
-    buildStore(); renderLegend(); initRightPane(); quoteDetailGraph();
+    buildStore(); renderLegend(); initRightPane(); quoteDetailGraph(); initUsageToggle();
     await applyLeafDeepLink();
   } catch (e) { $("stats").innerHTML = `<span class="err">Load failed: ${esc(e.message)}. Serve this folder over http (./serve.sh), not file://</span>`; }
 })();
@@ -344,3 +345,67 @@ async function applyLeafDeepLink() {
   }
 }
 
+
+// ---------- usage overlay toggle (ops data from Leaf Tender; default OFF) ----------
+const USAGE_KEY = "pcaq-viewer-show-usage";
+let usageOn = false, usageByIri = null, usageLoading = null;
+const RISK_BORDER = (r) => (r >= 0.5 ? "#e5534b" : r > 0 ? "#e0a63a" : null);
+async function loadUsage() {
+  if (usageByIri) return usageByIri;
+  if (!usageLoading) usageLoading = (async () => {
+    const m = new Map();
+    try {
+      const r = await fetch("../leaf-tender/api/leaves/overlay", { credentials: "same-origin" });
+      if (r.ok) for (const l of (await r.json()).leaves || []) {
+        if (!l.graph_iri) continue;
+        const u = m.get(l.graph_iri) || { use_count: 0, last_used_at: null, risk_score: 0, leaves: 0 };
+        u.use_count += l.use_count || 0; u.leaves++;
+        if (l.last_used_at && (!u.last_used_at || l.last_used_at > u.last_used_at)) u.last_used_at = l.last_used_at;
+        u.risk_score = Math.max(u.risk_score, l.risk_score || 0);
+        m.set(l.graph_iri, u);
+      }
+    } catch (_) {}
+    usageByIri = m; return m;
+  })();
+  return usageLoading;
+}
+function baseNode(id) {
+  const g = groupOf(id); const st = GRAPH_STYLE.groups[g] || GRAPH_STYLE.groups.other;
+  return { id, label: label(id), title: short(id), color: { background: st.color }, borderWidth: 0 };
+}
+function paintUsage(ids) {
+  if (!nodes || !usageByIri) return;
+  const upd = [];
+  for (const id of ids || nodes.getIds()) {
+    if (typeof id !== "string" || id.startsWith("lit:") || id.startsWith("leaf:")) continue;
+    const b = baseNode(id);
+    if (usageOn) {
+      const u = usageByIri.get(id);
+      if (u) {
+        const border = RISK_BORDER(u.risk_score);
+        b.label += `\n▲ ${u.use_count} use${u.use_count === 1 ? "" : "s"}`;
+        b.title = `${short(id)}\nUses: ${u.use_count}\nLast used: ${u.last_used_at || "never"}\nRisk: ${u.risk_score}`;
+        if (border) { b.color = { background: b.color.background, border }; b.borderWidth = 3; }
+      }
+    }
+    upd.push(b);
+  }
+  if (upd.length) nodes.update(upd);
+}
+async function setUsage(on) {
+  usageOn = on;
+  const btn = $("g-usage"); btn.setAttribute("aria-pressed", on ? "true" : "false"); btn.textContent = on ? "Hide usage" : "Show usage";
+  try { localStorage.setItem(USAGE_KEY, on ? "1" : "0"); } catch (_) {}
+  const note = $("usage-note");
+  if (on) {
+    const m = await loadUsage();
+    note.hidden = false;
+    note.textContent = m.size ? `usage overlay: ${m.size} node(s) with Leaf Tender use counts · red/amber border = risk` : "usage overlay: no usage data (sign in to Leaf Tender)";
+  } else note.hidden = true;
+  paintUsage();
+}
+function initUsageToggle() {
+  let on = false; try { on = localStorage.getItem(USAGE_KEY) === "1"; } catch (_) {}
+  $("g-usage").onclick = () => setUsage(!usageOn);
+  if (on) setUsage(true);
+}

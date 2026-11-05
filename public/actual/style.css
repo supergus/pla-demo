@@ -41,3 +41,6 @@ a.iri{color:var(--ac);cursor:pointer;text-decoration:none}a.iri:hover{text-decor
 .legend-edge{flex:0 0 28px;height:0;border-top:2px solid #3a4553;position:relative}
 .legend-edge.dashed{border-top-style:dashed}
 .legend-edge::after{content:"";position:absolute;right:-1px;top:-4px;border:4px solid transparent;border-left-color:#3a4553}
+
+/* usage overlay toggle */
+#g-usage[aria-pressed="true"]{border-color:var(--ac);color:var(--ac)}
