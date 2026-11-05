@@ -96,6 +96,17 @@ export async function onRequest(context) {
       if (!env.PLA) return new Response(JSON.stringify({ error: "api unavailable" }), { status: 503, headers: { "Content-Type": "application/json", "X-Robots-Tag": ROBOTS } });
       return env.PLA.fetch(request);
     }
+    if (url.pathname === "/leaf-tender" || url.pathname.startsWith("/leaf-tender/")) {
+      // Leaf Tender Worker (UI + /api). Strip the /leaf-tender prefix so the Worker serves from /.
+      if (!env.LEAF_TENDER) return new Response("Leaf Tender unavailable", { status: 503, headers: { "Content-Type": "text/plain", "X-Robots-Tag": ROBOTS } });
+      const u = new URL(request.url);
+      let rest = u.pathname.slice("/leaf-tender".length) || "/";
+      if (!rest.startsWith("/")) rest = "/" + rest;
+      u.pathname = rest;
+      const headers = new Headers(request.headers);
+      headers.set("X-Forwarded-Prefix", "/leaf-tender");
+      return env.LEAF_TENDER.fetch(new Request(u.toString(), { method: request.method, headers, body: request.body, redirect: "manual" }));
+    }
     const res = await next();
     const out = new Response(res.body, res);
     out.headers.set("X-Robots-Tag", ROBOTS);

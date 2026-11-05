@@ -97,6 +97,9 @@ const GRAPH_STYLE = {
     Margin:     { color: "#ff6b9d", shape: "box",     legend: "Margin view" },
     other:      { color: "#8593a3", shape: "box",     legend: "Other individual" },
     lit:        { color: "#2a3340", shape: "text",    legend: "Literal value", fontColor: "#c8d2de" },
+    leafOpen:   { color: "#e85d5d", shape: "diamond", legend: "Leaf Tender · open" },
+    leafProgress:{ color: "#e0a63a", shape: "diamond", legend: "Leaf Tender · in progress" },
+    leafResolved:{ color: "#3fb27f", shape: "diamond", legend: "Leaf Tender · resolved" },
   },
   edges: {
     property:  { color: "#3a4553", dashes: false, legend: "Property edge" },
@@ -133,7 +136,17 @@ function ensureNet() {
     physics: { solver: "forceAtlas2Based", forceAtlas2Based: { gravitationalConstant: -70, springLength: 110 }, stabilization: { iterations: 100 } },
     interaction: { hover: true } });
   net.on("stabilizationIterationsDone", () => net.fit());
-  net.on("click", (p) => { const id = p.nodes[0]; if (id && !id.startsWith("lit:")) showDetail(id); });
+  net.on("click", (p) => {
+    const id = p.nodes[0]; if (!id || id.startsWith("lit:")) return;
+    if (String(id).startsWith("leaf:")) {
+      const lid = String(id).slice(5);
+      $("detail").innerHTML = `<h2>Leaf Tender</h2><div class="muted">${esc(lid)}</div>
+        <p><a class="iri" href="../leaf-tender/#leaf=${encodeURIComponent(lid)}">Open in Leaf Tender</a></p>`;
+      $("detail").classList.remove("muted");
+      return;
+    }
+    showDetail(id);
+  });
   net.on("doubleClick", (p) => { const id = p.nodes[0]; if (id && !id.startsWith("lit:")) expand(id); });
 }
 function addNode(iri) {
@@ -261,5 +274,73 @@ $("file").onchange = async (e) => { for (const f of e.target.files) extra.push({
     $("q-pick").innerHTML = queries.map((q, i) => `<option value="${i}">${esc(q.title)}</option>`).join("");
     $("q-text").value = queries[0]?.text || "";
     buildStore(); renderLegend(); initRightPane(); quoteDetailGraph();
+    await applyLeafDeepLink();
   } catch (e) { $("stats").innerHTML = `<span class="err">Load failed: ${esc(e.message)}. Serve this folder over http (./serve.sh), not file://</span>`; }
 })();
+
+// ---------- Leaf Tender deep-link + status overlay ----------
+function leafGroup(status) {
+  if (status === "resolved") return "leafResolved";
+  if (status === "in_progress" || status === "blocked") return "leafProgress";
+  return "leafOpen";
+}
+function addLeafOverlayNode(leaf) {
+  ensureNet();
+  const id = "leaf:" + leaf.id;
+  if (nodes.get(id)) nodes.remove(id);
+  const g = leafGroup(leaf.status);
+  const st = GRAPH_STYLE.groups[g];
+  nodes.add({
+    id, label: "Leaf: " + (leaf.title || leaf.id).slice(0, 48),
+    title: `Leaf Tender: ${leaf.title} (${leaf.status})`,
+    color: { background: st.color, border: "#fff" }, shape: st.shape, borderWidth: 2,
+    font: { color: "#0b0f14", size: 10 },
+  });
+  if (leaf.graph_iri) {
+    addNode(leaf.graph_iri);
+    const eid = id + "|focus|" + leaf.graph_iri;
+    if (!edges.get(eid)) edges.add({ id: eid, from: id, to: leaf.graph_iri, label: "focus", color: st.color, dashes: true });
+  }
+  if (leaf.parent_leaf_id) {
+    const pid = "leaf:" + leaf.parent_leaf_id;
+    if (nodes.get(pid)) {
+      const eid = pid + "|spawn|" + id;
+      if (!edges.get(eid)) edges.add({ id: eid, from: pid, to: id, label: "spawned", color: "#8593a3", dashes: true });
+    }
+  }
+  return id;
+}
+async function applyLeafDeepLink() {
+  const sp = new URLSearchParams(location.search);
+  const leafId = sp.get("leaf");
+  const focus = sp.get("focus");
+  // Optional overlay from Leaf Tender (same origin behind gate). Ignore auth failures.
+  // Only hit Leaf Tender when a deep-link is present (avoids console 404 noise on standalone viewer / e2e).
+  let overlay = [];
+  if (leafId) {
+    try {
+      const r = await fetch("../leaf-tender/api/leaves/overlay", { credentials: "same-origin" });
+      if (r.ok) overlay = (await r.json()).leaves || [];
+    } catch (_) {}
+  }
+  if (overlay.length) {
+    const pick = overlay.filter((l) => l.id === leafId || l.parent_leaf_id === leafId);
+    for (const l of pick) addLeafOverlayNode(l);
+  } else if (leafId) {
+    addLeafOverlayNode({ id: leafId, title: leafId, status: "open", graph_iri: focus && focus.startsWith("http") ? focus : null });
+  }
+  if (focus && !focus.startsWith("leaf:")) {
+    try {
+      if (select(`ASK { <${focus}> ?p ?o }`).ask || select(`ASK { ?s ?p <${focus}> }`).ask) {
+        tab("graph"); addNode(focus); expand(focus);
+        if (net) { net.selectNodes([focus]); net.focus(focus, { scale: 1.2, animation: true }); }
+        showDetail(focus);
+      }
+    } catch (_) {}
+  }
+  if (leafId && net) {
+    const nid = "leaf:" + leafId;
+    if (nodes.get(nid)) { net.selectNodes([nid]); try { net.focus(nid, { scale: 1.1, animation: true }); } catch (_) {} }
+  }
+}
+
