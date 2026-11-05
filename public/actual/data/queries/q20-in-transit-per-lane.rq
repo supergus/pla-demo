@@ -1,0 +1,18 @@
+# Q20: Owned in-transit qty and $ per shipment lane (asserted + demand-rate recompute)
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?lane ?laneLabel ?from ?to ?ownedDays ?vol ?unitVal
+       ?qtyAsserted ?valueAsserted
+       (?vol * ?ownedDays / 365 AS ?qtyRecompute)
+       ((?vol * ?ownedDays / 365) * ?unitVal AS ?valueRecompute)
+       ?weOwn ?lotAdj
+WHERE {
+  ?lane a pcaq:ShipmentLane ; rdfs:label ?laneLabel ;
+        pcaq:laneFrom/rdfs:label ?from ; pcaq:laneTo/rdfs:label ?to ;
+        pcaq:ownedTransitDays ?ownedDays ; pcaq:unitValuationAmount ?unitVal ;
+        pcaq:ownedInTransitQty ?qtyAsserted ; pcaq:ownedInTransitValue ?valueAsserted .
+  ?line pcaq:hasShipmentLane ?lane ; pcaq:averageAnnualVolume ?vol .
+  OPTIONAL { ?lane pcaq:weOwnInTransit ?weOwn }
+  OPTIONAL { ?lane pcaq:lotAdjustedInTransitQty ?lotAdj }
+}
+ORDER BY ?lane

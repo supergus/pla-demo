@@ -1,0 +1,16 @@
+# Q26: Components shipped from locations with a given hazard tag (default: earthquake)
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?line ?lineLabel ?lane ?laneLabel ?loc ?city ?country ?hazard ?severity ?vol ?inTransitValue
+WHERE {
+  BIND(pcaq:EarthquakeRisk AS ?hazardFilter)
+  ?line a pcaq:PartLine ; rdfs:label ?lineLabel ; pcaq:hasShipmentLane ?lane ;
+        pcaq:averageAnnualVolume ?vol .
+  ?lane rdfs:label ?laneLabel ; pcaq:shipsFromLocation ?loc .
+  ?loc pcaq:hasHazardTag ?hazard ; pcaq:locationCity ?city ; pcaq:locationCountry ?country .
+  FILTER(?hazard = ?hazardFilter)
+  ?hazard rdfs:label ?hazardLabel .
+  OPTIONAL { ?loc pcaq:hazardSeverity ?severity }
+  OPTIONAL { ?lane pcaq:ownedInTransitValue ?inTransitValue }
+}
+ORDER BY DESC(?severity) ?line

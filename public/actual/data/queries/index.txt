@@ -17,3 +17,13 @@ q16-interco-plant-loops.rq
 q17-interco-unapproved-loops.rq
 q18-interco-multi-parent.rq
 q19-interco-transfer-iri-loops.rq
+q20-in-transit-per-lane.rq
+q21-in-transit-per-plant.rq
+q22-in-transit-per-part.rq
+q23-in-transit-workbook-total.rq
+q24-incoterm-ownership-check.rq
+q25-components-from-country.rq
+q26-components-from-hazard.rq
+q27-exposure-by-country-hazard.rq
+q28-single-source-exposure.rq
+q29-sourcing-restriction-hits.rq

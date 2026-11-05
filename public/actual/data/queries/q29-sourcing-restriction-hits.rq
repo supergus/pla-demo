@@ -1,0 +1,43 @@
+# Q29: Quote lines / lanes whose ship-from falls under an active sourcing restriction
+# Match by country OR region OR exact location; honor effective-from/to vs ?asOf.
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+SELECT DISTINCT ?line ?lineLabel ?lane ?laneLabel ?loc ?city ?country ?region
+       ?restriction ?reason ?severity ?source ?matchKind ?vol ?inTransitValue
+WHERE {
+  BIND("2026-11-04"^^xsd:date AS ?asOf)
+  ?restriction a pcaq:SourcingRestriction ;
+               pcaq:restrictionReason ?rr ;
+               pcaq:restrictionEffectiveFrom ?effFrom ;
+               pcaq:restrictionSeverity ?severity .
+  ?rr rdfs:label ?reason .
+  OPTIONAL { ?restriction pcaq:restrictionEffectiveTo ?effTo }
+  OPTIONAL { ?restriction pcaq:restrictionSource ?source }
+  OPTIONAL { ?restriction pcaq:restrictionActive ?activeFlag }
+  FILTER(!BOUND(?activeFlag) || ?activeFlag = true)
+  FILTER(?asOf >= ?effFrom)
+  FILTER(!BOUND(?effTo) || ?asOf <= ?effTo)
+
+  ?line a pcaq:PartLine ; rdfs:label ?lineLabel ; pcaq:hasShipmentLane ?lane ;
+        pcaq:averageAnnualVolume ?vol .
+  ?lane rdfs:label ?laneLabel ; pcaq:shipsFromLocation ?loc .
+  ?loc pcaq:locationCountry ?country ; pcaq:locationCity ?city .
+  OPTIONAL { ?loc pcaq:locationRegion ?region }
+  OPTIONAL { ?lane pcaq:ownedInTransitValue ?inTransitValue }
+
+  OPTIONAL { ?restriction pcaq:restrictsLocation ?loc . BIND("location" AS ?mLoc) }
+  OPTIONAL {
+    ?restriction pcaq:restrictsCountry ?rc .
+    FILTER(LCASE(STR(?rc)) = LCASE(STR(?country)))
+    BIND("country" AS ?mCountry)
+  }
+  OPTIONAL {
+    ?restriction pcaq:restrictsRegion ?rrgn .
+    FILTER(BOUND(?region) && LCASE(STR(?rrgn)) = LCASE(STR(?region)))
+    BIND("region" AS ?mRegion)
+  }
+  BIND(COALESCE(?mLoc, ?mCountry, ?mRegion) AS ?matchKind)
+  FILTER(BOUND(?matchKind))
+}
+ORDER BY DESC(?severity) ?matchKind ?line

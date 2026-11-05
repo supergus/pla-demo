@@ -1,0 +1,20 @@
+# Q27: Spend / in-transit $ exposed by country and by hazard tag
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?dimension ?key (SUM(?vol) AS ?annualVolume) (SUM(?itv) AS ?ownedInTransitValue) (COUNT(DISTINCT ?lane) AS ?lanes)
+WHERE {
+  {
+    BIND("country" AS ?dimension)
+    ?line pcaq:hasShipmentLane ?lane ; pcaq:averageAnnualVolume ?vol .
+    ?lane pcaq:shipsFromLocation ?loc ; pcaq:ownedInTransitValue ?itv .
+    ?loc pcaq:locationCountry ?key .
+  } UNION {
+    BIND("hazard" AS ?dimension)
+    ?line pcaq:hasShipmentLane ?lane ; pcaq:averageAnnualVolume ?vol .
+    ?lane pcaq:shipsFromLocation ?loc ; pcaq:ownedInTransitValue ?itv .
+    ?loc pcaq:hasHazardTag ?htag .
+    ?htag rdfs:label ?key .
+  }
+}
+GROUP BY ?dimension ?key
+ORDER BY ?dimension DESC(?ownedInTransitValue)

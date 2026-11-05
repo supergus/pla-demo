@@ -1,0 +1,15 @@
+# Q25: Components (part lines) shipped from a given country (bind ?countryFilter e.g. "China")
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?line ?lineLabel ?lane ?laneLabel ?loc ?city ?region ?country ?vol ?inTransitValue
+WHERE {
+  BIND("China" AS ?countryFilter)
+  ?line a pcaq:PartLine ; rdfs:label ?lineLabel ; pcaq:hasShipmentLane ?lane ;
+        pcaq:averageAnnualVolume ?vol .
+  ?lane rdfs:label ?laneLabel ; pcaq:shipsFromLocation ?loc .
+  ?loc pcaq:locationCountry ?country ; pcaq:locationCity ?city .
+  FILTER(LCASE(STR(?country)) = LCASE(STR(?countryFilter)))
+  OPTIONAL { ?loc pcaq:locationRegion ?region }
+  OPTIONAL { ?lane pcaq:ownedInTransitValue ?inTransitValue }
+}
+ORDER BY ?line
