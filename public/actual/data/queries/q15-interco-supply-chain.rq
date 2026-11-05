@@ -1,0 +1,15 @@
+# Q15: Intercompany supply-chain edges (producing → receiving), including nested parentTransfer and UnresolvedPlant placeholders
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?xfer ?fg ?producing ?receiving ?marginPc ?marginVol ?parent ?unresolved WHERE {
+  ?xfer a pcaq:IntercompanyTransfer ;
+        pcaq:intoFinishedGood ?fg ;
+        pcaq:producingPlant ?pp ;
+        pcaq:receivingPlant ?rp ;
+        pcaq:intercompanyMarginAmount ?marginPc .
+  ?pp rdfs:label ?producing . ?rp rdfs:label ?receiving .
+  OPTIONAL { ?xfer pcaq:intercompanyMarginAtVolume ?marginVol }
+  OPTIONAL { ?xfer pcaq:parentTransfer ?parent }
+  BIND(EXISTS { ?pp a pcaq:UnresolvedPlant } || EXISTS { ?rp a pcaq:UnresolvedPlant } AS ?unresolved)
+}
+ORDER BY ?fg ?xfer
