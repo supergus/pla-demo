@@ -141,7 +141,7 @@ function ensureNet() {
     if (String(id).startsWith("leaf:")) {
       const lid = String(id).slice(5);
       $("detail").innerHTML = `<h2>Leaf Tender</h2><div class="muted">${esc(lid)}</div>
-        <p><a class="iri" href="../leaf-tender/#leaf=${encodeURIComponent(lid)}">Open in Leaf Tender</a></p>`;
+        <p><a class="iri" href="https://leaftender.chriscouch.net/#leaf=${encodeURIComponent(lid)}">Open in Leaf Tender</a></p>`;
       $("detail").classList.remove("muted");
       return;
     }
@@ -320,7 +320,7 @@ async function applyLeafDeepLink() {
   let overlay = [];
   if (leafId) {
     try {
-      const r = await fetch("../leaf-tender/api/leaves/overlay", { credentials: "same-origin" });
+      const r = await fetch("https://leaftender.chriscouch.net/api/leaves/overlay", { credentials: "same-origin" });
       if (r.ok) overlay = (await r.json()).leaves || [];
     } catch (_) {}
   }
@@ -355,7 +355,7 @@ async function loadUsage() {
   if (!usageLoading) usageLoading = (async () => {
     const m = new Map();
     try {
-      const r = await fetch("../leaf-tender/api/leaves/overlay", { credentials: "same-origin" });
+      const r = await fetch("https://leaftender.chriscouch.net/api/leaves/overlay", { credentials: "same-origin" });
       if (r.ok) for (const l of (await r.json()).leaves || []) {
         if (!l.graph_iri) continue;
         const u = m.get(l.graph_iri) || { use_count: 0, last_used_at: null, risk_score: 0, leaves: 0 };

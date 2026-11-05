@@ -1,34 +1,34 @@
-// /leaf-tender must sit behind the same gate; when bound, proxy to LEAF_TENDER worker.
+// /leaf-tender redirects to leaftender.chriscouch.net (suite owns its own login — no Secret? required).
 import assert from "node:assert/strict";
-import { onRequest } from "../functions/_middleware.js";
+import { onRequest, leafTenderRedirect } from "../functions/_middleware.js";
 
 const env = { PLA_SECRET: "right-one", COOKIE_KEY: "k".repeat(32) };
 const next = async () => new Response("PAGES CONTENT", { status: 200 });
 
-for (const path of ["/leaf-tender", "/leaf-tender/", "/leaf-tender/api/health"]) {
+for (const [path, expectLoc] of [
+  ["/leaf-tender", "https://leaftender.chriscouch.net/"],
+  ["/leaf-tender/", "https://leaftender.chriscouch.net/"],
+  ["/leaf-tender/api/health", "https://leaftender.chriscouch.net/api/health"],
+  ["/leaf-tender/ts.html?trace=tr_x", "https://leaftender.chriscouch.net/ts.html?trace=tr_x"],
+]) {
   const r = await onRequest({ env, next, request: new Request("https://x.pages.dev" + path, { headers: { "CF-Connecting-IP": "203.0.113.7" } }) });
-  assert.equal(r.status, 401, path);
-  const body = await r.text();
-  assert.ok(body.includes("Secret?") && !body.includes("PAGES CONTENT"), path);
+  assert.equal(r.status, 302, path);
+  assert.equal(r.headers.get("location"), expectLoc, path);
 }
 
-// With a valid session and no binding → 503
-import { signSession } from "../functions/_gate.js";
-const token = await signSession(env.COOKIE_KEY, Date.now() + 3600_000);
-const r503 = await onRequest({
-  env, next,
-  request: new Request("https://x.pages.dev/leaf-tender/", { headers: { Cookie: `pla_session=${token}`, "CF-Connecting-IP": "203.0.113.7" } }),
-});
-assert.equal(r503.status, 503);
+const r = leafTenderRedirect(new URL("https://pla.chriscouch.net/leaf-tender/ts.html?trace=tr_ICBLANK1"));
+assert.equal(r.status, 302);
+assert.equal(r.headers.get("location"), "https://leaftender.chriscouch.net/ts.html?trace=tr_ICBLANK1");
 
-// With binding → proxied, prefix stripped
-let seen;
-env.LEAF_TENDER = { fetch: async (req) => { seen = new URL(req.url); return new Response("LT OK", { status: 200 }); } };
-const rOk = await onRequest({
-  env, next,
-  request: new Request("https://x.pages.dev/leaf-tender/api/health", { headers: { Cookie: `pla_session=${token}`, "CF-Connecting-IP": "203.0.113.7" } }),
+// LEAF_TENDER service binding must not be consulted
+let called = false;
+const redirected = await onRequest({
+  env: { ...env, LEAF_TENDER: { fetch: async () => { called = true; return new Response("nope"); } } },
+  next,
+  request: new Request("https://x.pages.dev/leaf-tender/login.html", { headers: { "CF-Connecting-IP": "203.0.113.7" } }),
 });
-assert.equal(rOk.status, 200);
-assert.equal(await rOk.text(), "LT OK");
-assert.equal(seen.pathname, "/api/health");
-console.log("leaf-tender gated ok");
+assert.equal(redirected.status, 302);
+assert.equal(redirected.headers.get("location"), "https://leaftender.chriscouch.net/login.html");
+assert.equal(called, false);
+
+console.log("leaf-tender redirect ok");
