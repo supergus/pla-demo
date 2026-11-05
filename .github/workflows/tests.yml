@@ -12,3 +12,4 @@ jobs:
       - run: node tests/middleware.test.mjs
       - run: node tests/actual-gated.test.mjs
       - run: node tests/leaf-tender-gated.test.mjs
+      - run: node tests/leafTenderRedirect.test.mjs
