@@ -1,0 +1,21 @@
+# Q13: Total company margin per FG line = FG plant margin + IC tree (roots + nested via ^parentTransfer*)
+# Asserted TotMargin should equal FG + IC. icTreeSumPc / icTreeSumVol recompute the IC tree from transfers.
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?line ?fgLabel ?scope ?fgMargin ?icMarginAsserted ?totalAsserted ?icTreeSumPc ?icTreeSumVol
+WHERE {
+  {
+    SELECT ?line (SUM(?pc) AS ?icTreeSumPc) (SUM(?vol) AS ?icTreeSumVol) WHERE {
+      ?line pcaq:hasIntercompanyTransfer/^pcaq:parentTransfer* ?xfer .
+      ?xfer pcaq:intercompanyMarginAmount ?pc ; pcaq:intercompanyMarginAtVolume ?vol .
+    } GROUP BY ?line
+  }
+  ?line a pcaq:PartLine ; rdfs:label ?fgLabel ;
+        pcaq:hasFinishedGoodsMargin ?fg ;
+        pcaq:hasIntercompanyMargin ?ic ;
+        pcaq:hasTotalCompanyMargin ?tot .
+  ?fg pcaq:marginAmount ?fgMargin ; pcaq:marginScope ?scope .
+  ?ic pcaq:marginAmount ?icMarginAsserted ; pcaq:marginScope ?scope .
+  ?tot pcaq:marginAmount ?totalAsserted ; pcaq:marginScope ?scope .
+}
+ORDER BY ?line ?scope

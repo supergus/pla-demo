@@ -1,0 +1,10 @@
+# Q14: Workbook rollup of total company margin at average annual volume
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?workbook ?wbLabel (SUM(?total) AS ?workbookTotalCompanyMargin) WHERE {
+  ?line pcaq:inWorkbook ?workbook ;
+        pcaq:hasTotalCompanyMargin ?tm .
+  ?workbook rdfs:label ?wbLabel .
+  ?tm pcaq:marginAmount ?total ; pcaq:marginScope "averageAnnualVolume" .
+}
+GROUP BY ?workbook ?wbLabel

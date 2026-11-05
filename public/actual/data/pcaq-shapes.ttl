@@ -34,3 +34,29 @@ shp:LTAStepShape a sh:NodeShape ;
 shp:EstimateShape a sh:NodeShape ;
     sh:targetClass pcaq:CostEstimate ;
     sh:property [ sh:path pcaq:importedFrom ; sh:class pcaq:ImportedEstimateSource ; sh:minCount 1 ; sh:message "ESTIMATE has no import source (CER provenance)" ] .
+
+# --- Intercompany (v0.2) ---
+# Producing + receiving plants are REQUIRED. UnresolvedPlant placeholders satisfy sh:class pcaq:Plant.
+shp:IntercompanyTransferShape a sh:NodeShape ;
+    sh:targetClass pcaq:IntercompanyTransfer ;
+    sh:property
+      [ sh:path pcaq:producingPlant ; sh:class pcaq:Plant ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "TRANSFER needs producing plant (use UnresolvedPlant placeholder if unknown)" ] ,
+      [ sh:path pcaq:receivingPlant ; sh:class pcaq:Plant ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "TRANSFER needs receiving plant (use UnresolvedPlant placeholder if unknown)" ] ,
+      [ sh:path pcaq:intoFinishedGood ; sh:class pcaq:PartLine ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "TRANSFER not linked to a finished-good line" ] ,
+      [ sh:path pcaq:intercompanyMarginAmount ; sh:datatype xsd:decimal ; sh:minCount 1 ;
+        sh:message "TRANSFER missing IC margin per piece (AK)" ] .
+
+shp:TotalCompanyMarginShape a sh:NodeShape ;
+    sh:targetClass pcaq:TotalCompanyMargin ;
+    sh:property
+      [ sh:path pcaq:marginAmount ; sh:datatype xsd:decimal ; sh:minCount 1 ; sh:message "TOTAL COMPANY MARGIN has no amount" ] ,
+      [ sh:path pcaq:marginScope ; sh:datatype xsd:string ; sh:minCount 1 ; sh:message "TOTAL COMPANY MARGIN needs scope" ] .
+
+shp:IntercompanyMarginShape a sh:NodeShape ;
+    sh:targetClass pcaq:IntercompanyMargin ;
+    sh:property
+      [ sh:path pcaq:marginAmount ; sh:datatype xsd:decimal ; sh:minCount 1 ; sh:message "IC MARGIN has no amount" ] ,
+      [ sh:path pcaq:marginScope ; sh:datatype xsd:string ; sh:minCount 1 ; sh:message "IC MARGIN needs scope" ] .

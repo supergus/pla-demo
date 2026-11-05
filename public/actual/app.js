@@ -82,12 +82,14 @@ function showDetail(iri) {
 }
 
 // ---------- graph ----------
-const COLORS = { class: "#6e7fd6", PartLine: "#4da3ff", CostElement: "#3fb27f", SellingPrice: "#f08b5a", LTA: "#e0a63a", estimate: "#d46ee8", other: "#8593a3", lit: "#2a3340" };
+const COLORS = { class: "#6e7fd6", PartLine: "#4da3ff", CostElement: "#3fb27f", SellingPrice: "#f08b5a", LTA: "#e0a63a", estimate: "#d46ee8", Interco: "#2ec4b6", Margin: "#ff6b9d", other: "#8593a3", lit: "#2a3340" };
 function groupOf(iri) {
   if (select(`ASK { <${iri}> a owl:Class }`).ask) return "class";
   const t = (c) => select(`ASK { <${iri}> a/rdfs:subClassOf* ${c} }`).ask;
   if (t("pcaq:PartLine")) return "PartLine"; if (t("pcaq:CostElement") || t("pcaq:CostBreakdown")) return "CostElement";
   if (t("pcaq:SellingPrice")) return "SellingPrice"; if (t("pcaq:LTASchedule") || t("pcaq:LTAStep")) return "LTA";
+  if (t("pcaq:IntercompanyTransfer") || t("pcaq:IntercompanySubcomponent") || t("pcaq:UnresolvedPlant")) return "Interco";
+  if (t("pcaq:MarginView") || t("pcaq:FinishedGoodsMargin") || t("pcaq:IntercompanyMargin") || t("pcaq:TotalCompanyMargin")) return "Margin";
   if (t("prov:Entity")) return "estimate"; return "other";
 }
 function ensureNet() {
@@ -122,11 +124,22 @@ function schemaGraph() {
 }
 function spineGraph() {
   ensureNet(); nodes.clear(); edges.clear();
-  const line = select(`SELECT ?l WHERE { ?l a pcaq:PartLine ; pcaq:hasEstimate ?e } ORDER BY ?l LIMIT 1`).rows[0]?.l.value;
+  // Prefer a line that has an IC transfer tree so the supply-chain edges show up
+  const line = select(`SELECT ?l WHERE { ?l a pcaq:PartLine ; pcaq:hasIntercompanyTransfer ?t } ORDER BY ?l LIMIT 1`).rows[0]?.l.value
+    || select(`SELECT ?l WHERE { ?l a pcaq:PartLine ; pcaq:hasEstimate ?e } ORDER BY ?l LIMIT 1`).rows[0]?.l.value;
   if (!line) return;
   expand(line);
-  for (const p of ["hasCostBreakdown", "hasLTASchedule", "hasEstimate", "inWorkbook"]) { const o = select(`SELECT ?o WHERE { <${line}> pcaq:${p} ?o }`).rows[0]; if (o) expand(o.o.value); }
+  for (const p of ["hasCostBreakdown", "hasLTASchedule", "hasEstimate", "inWorkbook", "hasFinishedGoodsMargin", "hasIntercompanyMargin", "hasTotalCompanyMargin"]) {
+    for (const o of select(`SELECT ?o WHERE { <${line}> pcaq:${p} ?o }`).rows) expand(o.o.value);
+  }
   for (const r of select(`SELECT ?y WHERE { <${line}> pcaq:hasYearPrice ?y }`).rows) expand(r.y.value);
+  // IC supply chain: roots + nested children via ^parentTransfer*
+  for (const r of select(`SELECT ?t WHERE { <${line}> pcaq:hasIntercompanyTransfer/^pcaq:parentTransfer* ?t }`).rows) {
+    expand(r.t.value);
+    for (const p of ["producingPlant", "receivingPlant", "ofSubcomponent", "parentTransfer"]) {
+      for (const o of select(`SELECT ?o WHERE { <${r.t.value}> pcaq:${p} ?o }`).rows) expand(o.o.value);
+    }
+  }
   net.fit();
 }
 

@@ -10,3 +10,6 @@ q09-traceability.rq
 q10-class-counts.rq
 q11-plant-tax.rq
 q12-incomplete-lines.rq
+q13-total-company-margin.rq
+q14-workbook-company-margin.rq
+q15-interco-supply-chain.rq

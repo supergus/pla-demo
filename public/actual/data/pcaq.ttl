@@ -13,8 +13,8 @@
 
 <http://pcaq.local/ontology> a owl:Ontology ;
     rdfs:label "PCAQ ontology (thin draft)" ;
-    rdfs:comment "Quote tree of a PCAQ workbook: Program Data -> (imported estimate / Costing_Summary) -> Parts Data cost breakdown -> Sales Price N -> Proposed!O -> Volume LTA Royalty -> yearly selling prices (Y1..Y8, SOP-relative). Plus the SQR-database field map seen in samples B/C." ;
-    owl:versionInfo "0.1.0-draft" .
+    rdfs:comment "Quote tree of a PCAQ workbook: Program Data -> (imported estimate / Costing_Summary) -> Parts Data cost breakdown -> Sales Price N -> Proposed!O -> Volume LTA Royalty -> yearly selling prices (Y1..Y8, SOP-relative). Plus the SQR-database field map seen in samples B/C. v0.2: intercompany transfers (Sample A–D AK/AL/S9/ICC), required producing/receiving plants (UnresolvedPlant placeholders allowed), multi-level parentTransfer, total company margin = FG + IC tree." ;
+    owl:versionInfo "0.2.0-draft" .
 
 # ---------- annotation properties (traceability back to the workbook) ----------
 pcaq:sourceSheet a owl:AnnotationProperty ; rdfs:label "source sheet" ;
@@ -165,8 +165,9 @@ pcaq:PackagingCost a owl:Class ; rdfs:subClassOf pcaq:CostElement ; rdfs:label "
     pcaq:openQuestion "CS!R not referenced by Parts Data; where does Parts Data packaging come from?" .
 pcaq:SurchargeCost a owl:Class ; rdfs:subClassOf pcaq:MaterialCost ; rdfs:label "surcharge" ;
     pcaq:openQuestion "Alloy (CS!H) / Other (CS!I) surcharges unused by Parts Data cost cols (I appears in override price M)." .
-pcaq:IntercompanyChargeCost a owl:Class ; rdfs:subClassOf pcaq:CostElement ; rdfs:label "ICC (intercompany charge?)" ; pcaq:sourceColumn "CS!N" ;
-    pcaq:openQuestion "Meaning of ICC; unused by Parts Data." .
+pcaq:IntercompanyChargeCost a owl:Class ; rdfs:subClassOf pcaq:CostElement ; rdfs:label "ICC (intercompany charge, Costing_Summary)" ; pcaq:sourceColumn "CS!N / column ICC" ;
+    rdfs:comment "Variant A: Costing_Summary ICC populates Parts Data!AK (IC Margin per part) via INDEX/MATCH. Plain-master B/C/D keep AK typed on Parts Data without Costing_Summary." ;
+    pcaq:openQuestion "Confirm with finance whether ICC is always identical to AK outside variant A." .
 pcaq:SetupCost a owl:Class ; rdfs:subClassOf pcaq:CostElement ; rdfs:label "setup" ; pcaq:sourceColumn "CS!T" .
 pcaq:MiscellaneousCost a owl:Class ; rdfs:subClassOf pcaq:CostElement ; rdfs:label "miscellaneous" ; pcaq:sourceColumn "CS!S" .
 pcaq:ToolingCost a owl:Class ; rdfs:subClassOf pcaq:CostElement ; rdfs:label "tooling (total, not per piece)" ; pcaq:sourceColumn "CS!Y" .
@@ -247,3 +248,99 @@ pcaq:mapsFrom a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "maps f
 pcaq:mapsTo a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "maps to" ; rdfs:domain pcaq:SQRMapping ; rdfs:range pcaq:SQRField .
 pcaq:mappingKind a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "mapping kind" ; rdfs:domain pcaq:SQRMapping ; rdfs:range pcaq:MappingKind .
 pcaq:cellRef a owl:DatatypeProperty ; rdfs:label "cell reference" ; rdfs:domain pcaq:PCAQField ; rdfs:range xsd:string .
+
+# =====================================================================
+# Intercompany subcomponent transfers (v0.2 — Sample A–D; multi-level)
+# =====================================================================
+# PCAQ stores IC margin residual on the FG Parts Data line (AK/AL) and S9 treatment.
+# Producing/receiving plants are FIRST-CLASS even when the workbook does not name them:
+# use an UnresolvedPlant placeholder individual to be filled from SAP/finance later.
+# Nested IC: child transfer pcaq:parentTransfer parent transfer; roll up with
+#   ?line pcaq:hasIntercompanyTransfer/^pcaq:parentTransfer* ?t
+
+pcaq:IntercompanyTreatmentMode a owl:Class ; rdfs:label "intercompany treatment mode" ;
+    rdfs:comment "How IC margin enters Parts Data total cost (S) and ROS. Mirrors Parts Data!S9." ;
+    pcaq:sourceSheet "Parts Data" , "PC Summary" , "Sign-off" ;
+    owl:equivalentClass [ a owl:Class ; owl:oneOf ( pcaq:IntercompanyAsMargin pcaq:IntercompanyAsCost ) ] .
+pcaq:IntercompanyAsMargin a pcaq:IntercompanyTreatmentMode ; rdfs:label "InterCo as margin" ;
+    rdfs:comment "S9=0: TOTAL Cost S = Q + R (AK excluded). IC tracked separately as margin." .
+pcaq:IntercompanyAsCost a pcaq:IntercompanyTreatmentMode ; rdfs:label "InterCo as cost" ;
+    rdfs:comment "S9=1: TOTAL Cost S = Q + R + AK (IC margin folded into cost for ROS)." .
+
+pcaq:intercompanyTreatment a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "intercompany treatment" ;
+    rdfs:domain pcaq:PCAQWorkbook ; rdfs:range pcaq:IntercompanyTreatmentMode ;
+    pcaq:sourceColumn "Parts Data!S9" .
+
+pcaq:UnresolvedPlant a owl:Class ; rdfs:subClassOf pcaq:Plant ; rdfs:label "unresolved plant (placeholder)" ;
+    rdfs:comment "Placeholder plant node when PCAQ only stores the IC margin residual and does not name the sister plant. Replace with a real Plant when SAP/finance supplies the supply-chain link." .
+
+pcaq:IntercompanySubcomponent a owl:Class ; rdfs:subClassOf pcaq:Part ; rdfs:label "intercompany subcomponent" ;
+    rdfs:comment "Part produced by one plant/tax entity and transferred to another (intercompany sale), then rolled into a finished-good quote." .
+
+pcaq:IntercompanyTransfer a owl:Class ; rdfs:label "intercompany transfer" ;
+    rdfs:comment "Producing→receiving transfer of a subcomponent into a finished-good part line (or into another IC transfer via parentTransfer). Always has producingPlant and receivingPlant (use UnresolvedPlant placeholders when unknown)." ;
+    pcaq:sourceSheet "Parts Data" ; pcaq:sourceColumn "AK (IC Margin per part), AL (Inter Co @ avg vol), Q (purchased excl. IC); variant A: Costing_Summary ICC → AK" ;
+    pcaq:openQuestion "Where producing-plant standard cost and markup % are maintained (SAP material valuation? IC price list?). Whether ICC is always identical to AK outside variant A." .
+
+pcaq:producingPlant a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "producing plant" ;
+    rdfs:domain pcaq:IntercompanyTransfer ; rdfs:range pcaq:Plant ;
+    rdfs:comment "REQUIRED. Use an UnresolvedPlant individual when the workbook does not name the sister plant." .
+pcaq:receivingPlant a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "receiving plant" ;
+    rdfs:domain pcaq:IntercompanyTransfer ; rdfs:range pcaq:Plant ;
+    rdfs:comment "REQUIRED. Often the FG assembling plant when known; otherwise UnresolvedPlant." .
+pcaq:ofSubcomponent a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "of subcomponent" ;
+    rdfs:domain pcaq:IntercompanyTransfer ; rdfs:range pcaq:IntercompanySubcomponent .
+pcaq:intoFinishedGood a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "into finished good line" ;
+    rdfs:domain pcaq:IntercompanyTransfer ; rdfs:range pcaq:PartLine .
+pcaq:hasIntercompanyTransfer a owl:ObjectProperty ; rdfs:label "has intercompany transfer" ;
+    rdfs:domain pcaq:PartLine ; rdfs:range pcaq:IntercompanyTransfer ;
+    rdfs:comment "Direct (root) transfers into this FG line. Nested children are reached via ^parentTransfer*." .
+pcaq:parentTransfer a owl:ObjectProperty ; rdfs:label "parent transfer" ;
+    rdfs:domain pcaq:IntercompanyTransfer ; rdfs:range pcaq:IntercompanyTransfer ;
+    rdfs:comment "Multi-level IC: this transfer feeds the parent transfer (child→parent). Tree from FG: hasIntercompanyTransfer/^parentTransfer*." .
+
+pcaq:standardCost a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "producing-plant standard cost (per piece)" ;
+    rdfs:domain pcaq:IntercompanyTransfer ; rdfs:range xsd:decimal ;
+    pcaq:openQuestion "SAP / IC price list source — awaiting finance." .
+pcaq:intercompanyMarkupRate a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "intercompany markup rate" ;
+    rdfs:domain pcaq:IntercompanyTransfer ; rdfs:range xsd:decimal .
+pcaq:transferPrice a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "transfer price (per piece)" ;
+    rdfs:domain pcaq:IntercompanyTransfer ; rdfs:range xsd:decimal .
+pcaq:intercompanyMarginAmount a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "IC margin per piece" ;
+    rdfs:domain pcaq:IntercompanyTransfer ; rdfs:range xsd:decimal ;
+    rdfs:comment "Parts Data!AK. Variant A: populated from Costing_Summary ICC." ; pcaq:sourceColumn "Parts Data!AK ; Costing_Summary ICC" .
+pcaq:intercompanyMarginAtVolume a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "IC margin at average volume" ;
+    rdfs:domain pcaq:IntercompanyTransfer ; rdfs:range xsd:decimal ;
+    rdfs:comment "Parts Data!AL = AK * PCS * avg volume (Proposed!AN / FX)." ; pcaq:sourceColumn "Parts Data!AL ; Proposed!AN" .
+
+pcaq:feedsFromEstimateICC a owl:ObjectProperty ; rdfs:label "feeds from estimate ICC" ;
+    rdfs:domain pcaq:IntercompanyTransfer ; rdfs:range pcaq:IntercompanyChargeCost ;
+    rdfs:comment "Variant A lineage: Costing_Summary ICC cost element that populated AK." .
+
+pcaq:InboundIntercompanyTransportCost a owl:Class ; rdfs:subClassOf pcaq:CostElement ; rdfs:label "in-company transport" ;
+    rdfs:comment "Parts Data!AA 'In Co Tspt' — distinct from IC margin AK." ;
+    pcaq:sourceColumn "Parts Data!AA ; Proposed!K" .
+
+pcaq:MarginView a owl:Class ; rdfs:label "margin view" .
+pcaq:FinishedGoodsMargin a owl:Class ; rdfs:subClassOf pcaq:MarginView ; rdfs:label "finished-goods (plant) margin" ;
+    rdfs:comment "Selling-plant margin on the customer price (Proposed plant profit / Sign-off Plant Margin / ROS excl IC)." ;
+    pcaq:sourceSheet "Proposed" , "Sign-off" , "Summary by Tax Entity" .
+pcaq:IntercompanyMargin a owl:Class ; rdfs:subClassOf pcaq:MarginView ; rdfs:label "intercompany margin (tree)" ;
+    rdfs:comment "Sum of IC margins over the transfer tree for a FG line (roots + nested via ^parentTransfer*)." .
+pcaq:TotalCompanyMargin a owl:Class ; rdfs:subClassOf pcaq:MarginView ; rdfs:label "total company margin" ;
+    rdfs:comment "Finished-goods plant margin + intercompany margin tree. Open: whether purchased-ex-IC also hides more IC (Q4)." ;
+    pcaq:openQuestion "Count only AK tree, or also interco buried inside purchased material Q?" .
+
+pcaq:hasFinishedGoodsMargin a owl:ObjectProperty ; rdfs:label "has finished-goods margin" ;
+    rdfs:domain pcaq:PartLine ; rdfs:range pcaq:FinishedGoodsMargin .
+pcaq:hasIntercompanyMargin a owl:ObjectProperty ; rdfs:label "has intercompany margin" ;
+    rdfs:domain pcaq:PartLine ; rdfs:range pcaq:IntercompanyMargin .
+pcaq:hasTotalCompanyMargin a owl:ObjectProperty ; rdfs:label "has total company margin" ;
+    rdfs:domain pcaq:PartLine ; rdfs:range pcaq:TotalCompanyMargin .
+pcaq:marginAmount a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "margin amount" ;
+    rdfs:domain pcaq:MarginView ; rdfs:range xsd:decimal .
+pcaq:marginScope a owl:DatatypeProperty ; rdfs:label "margin scope" ;
+    rdfs:domain pcaq:MarginView ; rdfs:range xsd:string ;
+    rdfs:comment "'perPiece' or 'averageAnnualVolume'." .
+pcaq:derivedFromTransfer a owl:ObjectProperty ; rdfs:label "derived from transfer" ;
+    rdfs:domain pcaq:IntercompanyMargin ; rdfs:range pcaq:IntercompanyTransfer .

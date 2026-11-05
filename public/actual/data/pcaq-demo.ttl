@@ -9,13 +9,18 @@ ex:USD a pcaq:Currency ; rdfs:label "US dollar" ; pcaq:currencyCode "USD" .
 ex:Region-NA a pcaq:Region ; rdfs:label "North America" .
 ex:TaxEntity-DemoUS a pcaq:TaxEntity ; rdfs:label "DemoCo US LLC (fictional)" .
 ex:TaxEntity-DemoMX a pcaq:TaxEntity ; rdfs:label "DemoCo MX (fictional)" .
+ex:TaxEntity-DemoCA a pcaq:TaxEntity ; rdfs:label "DemoCo CA Inc (fictional)" .
 ex:PlantNorth a pcaq:Plant ; rdfs:label "Plant North" ; pcaq:inRegion ex:Region-NA ; pcaq:ownedByTaxEntity ex:TaxEntity-DemoUS .
 ex:PlantSouth a pcaq:Plant ; rdfs:label "Plant South" ; pcaq:inRegion ex:Region-NA ; pcaq:ownedByTaxEntity ex:TaxEntity-DemoMX .
+ex:PlantEast a pcaq:Plant ; rdfs:label "Plant East" ; pcaq:inRegion ex:Region-NA ; pcaq:ownedByTaxEntity ex:TaxEntity-DemoCA .
+# Placeholders for supply-chain links not named in a PCAQ workbook (AK-only residual case)
+ex:Plant-Unknown-Producing-P002 a pcaq:Plant , pcaq:UnresolvedPlant ; rdfs:label "Unresolved producing plant (P-002 IC)" .
+ex:Plant-Unknown-Receiving-P002 a pcaq:Plant , pcaq:UnresolvedPlant ; rdfs:label "Unresolved receiving plant (P-002 IC)" .
 ex:PT-Hoses a pcaq:ProductType ; rdfs:label "Section 1: hoses" .
 ex:PT-Connectors a pcaq:ProductType ; rdfs:label "Section 2: connectors" .
 
 ex:Program-Falcon a pcaq:Program ; rdfs:label "Program Falcon (fictional)" ;
-    pcaq:forCustomer ex:Customer-Acme ; pcaq:quoteCurrency ex:USD ; pcaq:usesPlant ex:PlantNorth , ex:PlantSouth ;
+    pcaq:forCustomer ex:Customer-Acme ; pcaq:quoteCurrency ex:USD ; pcaq:usesPlant ex:PlantNorth , ex:PlantSouth , ex:PlantEast ;
     pcaq:sopDate "2028-01-01"^^xsd:date ; pcaq:programLifeYears 3 ;
     pcaq:hasEconomicAssumption ex:Econ-Material , ex:Econ-Labour .
 ex:Econ-Material a pcaq:EconomicAssumption ; rdfs:label "Material inflation vs productivity" ;
@@ -24,7 +29,8 @@ ex:Econ-Labour a pcaq:EconomicAssumption ; rdfs:label "Labour inflation vs produ
     pcaq:appliesToCostElement pcaq:DirectLaborCost ; pcaq:inflationRate 0.04 ; pcaq:productivityRate 0.02 .
 
 ex:WB-Falcon-v1 a pcaq:PCAQWorkbook ; rdfs:label "PCAQ Falcon v1 (fictional)" ;
-    pcaq:ofProgram ex:Program-Falcon ; pcaq:templateVariant pcaq:CostingSummaryVariant ; pcaq:hasFX ex:FX-1 .
+    pcaq:ofProgram ex:Program-Falcon ; pcaq:templateVariant pcaq:CostingSummaryVariant ; pcaq:hasFX ex:FX-1 ;
+    pcaq:intercompanyTreatment pcaq:IntercompanyAsMargin .
 ex:FX-1 a pcaq:FXConversion ; rdfs:label "Proposed!M7 = 1 (same currency)" ; pcaq:fxFactor 1.0 .
 
 ex:EstimateSource-Unknown a pcaq:ImportedEstimateSource ; rdfs:label "CER / estimate export (system unknown)" ;
@@ -182,3 +188,64 @@ ex:Map-LTAProposal a pcaq:SQRMapping ; rdfs:label "LTA proposal map" ; pcaq:maps
 ex:SQR-EnterProj a pcaq:SQRField ; rdfs:label "SQR: EnterProj #" .
 ex:PF-EnterProj a pcaq:PCAQField ; rdfs:label "PCAQ (none)" ; pcaq:cellRef "(none)" .
 ex:Map-EnterProj a pcaq:SQRMapping ; rdfs:label "EnterProj # map" ; pcaq:mapsFrom ex:PF-EnterProj ; pcaq:mapsTo ex:SQR-EnterProj ; pcaq:mappingKind pcaq:NotInPCAQ .
+
+
+# Intercompany supply chain (fictional). Plants are first-class; UnresolvedPlant used when unnamed.
+ex:Part-SC-100 a pcaq:Part , pcaq:IntercompanySubcomponent ; rdfs:label "Demo IC hose core (fictional)" ; pcaq:partNumber "SC-100" .
+ex:Part-SC-050 a pcaq:Part , pcaq:IntercompanySubcomponent ; rdfs:label "Demo IC resin pellet (fictional)" ; pcaq:partNumber "SC-050" .
+
+ex:Xfer-SC-100-to-P-001 a pcaq:IntercompanyTransfer ; rdfs:label "IC transfer SC-100 → P-001" ;
+    pcaq:ofSubcomponent ex:Part-SC-100 ; pcaq:producingPlant ex:PlantEast ; pcaq:receivingPlant ex:PlantNorth ;
+    pcaq:intoFinishedGood ex:Line-P-001 ; pcaq:standardCost 2.00 ; pcaq:intercompanyMarkupRate 0.10 ;
+    pcaq:transferPrice 2.20 ; pcaq:intercompanyMarginAmount 0.20 ; pcaq:intercompanyMarginAtVolume 24000.00 .
+
+ex:Xfer-SC-050-to-SC-100 a pcaq:IntercompanyTransfer ; rdfs:label "IC transfer SC-050 → SC-100 (nested)" ;
+    pcaq:ofSubcomponent ex:Part-SC-050 ; pcaq:producingPlant ex:PlantSouth ; pcaq:receivingPlant ex:PlantEast ;
+    pcaq:intoFinishedGood ex:Line-P-001 ; pcaq:parentTransfer ex:Xfer-SC-100-to-P-001 ;
+    pcaq:standardCost 0.50 ; pcaq:intercompanyMarkupRate 0.08 ; pcaq:transferPrice 0.54 ;
+    pcaq:intercompanyMarginAmount 0.04 ; pcaq:intercompanyMarginAtVolume 4800.00 .
+
+ex:Line-P-001 pcaq:hasIntercompanyTransfer ex:Xfer-SC-100-to-P-001 ;
+    pcaq:hasFinishedGoodsMargin ex:FGMargin-P-001-pc , ex:FGMargin-P-001-vol ;
+    pcaq:hasIntercompanyMargin ex:ICMargin-P-001-pc , ex:ICMargin-P-001-vol ;
+    pcaq:hasTotalCompanyMargin ex:TotMargin-P-001-pc , ex:TotMargin-P-001-vol .
+ex:FGMargin-P-001-pc a pcaq:FinishedGoodsMargin ; rdfs:label "P-001 FG plant margin / pc" ;
+    pcaq:marginAmount 0.6104 ; pcaq:marginScope "perPiece" .
+ex:ICMargin-P-001-pc a pcaq:IntercompanyMargin ; rdfs:label "P-001 IC margin / pc (tree)" ;
+    pcaq:marginAmount 0.24 ; pcaq:marginScope "perPiece" ;
+    pcaq:derivedFromTransfer ex:Xfer-SC-100-to-P-001 , ex:Xfer-SC-050-to-SC-100 .
+ex:TotMargin-P-001-pc a pcaq:TotalCompanyMargin ; rdfs:label "P-001 total company margin / pc" ;
+    pcaq:marginAmount 0.8504 ; pcaq:marginScope "perPiece" .
+ex:FGMargin-P-001-vol a pcaq:FinishedGoodsMargin ; rdfs:label "P-001 FG plant margin @ avg vol" ;
+    pcaq:marginAmount 73248.00 ; pcaq:marginScope "averageAnnualVolume" .
+ex:ICMargin-P-001-vol a pcaq:IntercompanyMargin ; rdfs:label "P-001 IC margin @ avg vol (tree)" ;
+    pcaq:marginAmount 28800.00 ; pcaq:marginScope "averageAnnualVolume" ;
+    pcaq:derivedFromTransfer ex:Xfer-SC-100-to-P-001 , ex:Xfer-SC-050-to-SC-100 .
+ex:TotMargin-P-001-vol a pcaq:TotalCompanyMargin ; rdfs:label "P-001 total company margin @ avg vol" ;
+    pcaq:marginAmount 102048.00 ; pcaq:marginScope "averageAnnualVolume" .
+
+# AK-only line: PCAQ residual without named sister plants → UnresolvedPlant placeholders
+ex:Part-SC-UNK a pcaq:Part , pcaq:IntercompanySubcomponent ; rdfs:label "Demo IC insert (unnamed source)" ; pcaq:partNumber "SC-UNK" .
+ex:Xfer-AK-only-P-002 a pcaq:IntercompanyTransfer ; rdfs:label "IC transfer (AK-only) → P-002" ;
+    pcaq:ofSubcomponent ex:Part-SC-UNK ;
+    pcaq:producingPlant ex:Plant-Unknown-Producing-P002 ;
+    pcaq:receivingPlant ex:Plant-Unknown-Receiving-P002 ;
+    pcaq:intoFinishedGood ex:Line-P-002 ;
+    pcaq:intercompanyMarginAmount 0.15 ; pcaq:intercompanyMarginAtVolume 12000.00 .
+
+ex:Line-P-002 pcaq:hasIntercompanyTransfer ex:Xfer-AK-only-P-002 ;
+    pcaq:hasFinishedGoodsMargin ex:FGMargin-P-002-pc , ex:FGMargin-P-002-vol ;
+    pcaq:hasIntercompanyMargin ex:ICMargin-P-002-pc , ex:ICMargin-P-002-vol ;
+    pcaq:hasTotalCompanyMargin ex:TotMargin-P-002-pc , ex:TotMargin-P-002-vol .
+ex:FGMargin-P-002-pc a pcaq:FinishedGoodsMargin ; rdfs:label "P-002 FG plant margin / pc" ;
+    pcaq:marginAmount 0.2778 ; pcaq:marginScope "perPiece" .
+ex:ICMargin-P-002-pc a pcaq:IntercompanyMargin ; rdfs:label "P-002 IC margin / pc" ;
+    pcaq:marginAmount 0.15 ; pcaq:marginScope "perPiece" ; pcaq:derivedFromTransfer ex:Xfer-AK-only-P-002 .
+ex:TotMargin-P-002-pc a pcaq:TotalCompanyMargin ; rdfs:label "P-002 total company margin / pc" ;
+    pcaq:marginAmount 0.4278 ; pcaq:marginScope "perPiece" .
+ex:FGMargin-P-002-vol a pcaq:FinishedGoodsMargin ; rdfs:label "P-002 FG plant margin @ avg vol" ;
+    pcaq:marginAmount 22224.00 ; pcaq:marginScope "averageAnnualVolume" .
+ex:ICMargin-P-002-vol a pcaq:IntercompanyMargin ; rdfs:label "P-002 IC margin @ avg vol" ;
+    pcaq:marginAmount 12000.00 ; pcaq:marginScope "averageAnnualVolume" ; pcaq:derivedFromTransfer ex:Xfer-AK-only-P-002 .
+ex:TotMargin-P-002-vol a pcaq:TotalCompanyMargin ; rdfs:label "P-002 total company margin @ avg vol" ;
+    pcaq:marginAmount 34224.00 ; pcaq:marginScope "averageAnnualVolume" .
