@@ -1,0 +1,16 @@
+# Q17: Loop warning candidates — plant cycles that have at least one leg without approvedLoop true
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT DISTINCT ?loopPlant ?plantLabel ?leg ?producing ?receiving ?marginPc ?approved
+WHERE {
+  ?loopPlant a pcaq:Plant ; pcaq:shipsTo+ ?loopPlant .
+  OPTIONAL { ?loopPlant rdfs:label ?plantLabel }
+  ?leg a pcaq:IntercompanyTransfer ;
+       pcaq:producingPlant ?pp ; pcaq:receivingPlant ?rp ;
+       pcaq:intercompanyMarginAmount ?marginPc .
+  FILTER(?pp = ?loopPlant || ?rp = ?loopPlant)
+  ?pp rdfs:label ?producing . ?rp rdfs:label ?receiving .
+  OPTIONAL { ?leg pcaq:approvedLoop ?approved }
+  FILTER(!BOUND(?approved) || ?approved != true)
+}
+ORDER BY ?loopPlant ?leg

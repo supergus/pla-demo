@@ -1,0 +1,12 @@
+# Q18: Transfers that list more than one parentTransfer (diamond / multi-parent) — margin rollups must DISTINCT
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?xfer ?xferLabel (COUNT(?parent) AS ?parentCount)
+       (GROUP_CONCAT(DISTINCT STR(?parent); separator="; ") AS ?parents)
+WHERE {
+  ?xfer a pcaq:IntercompanyTransfer ; pcaq:parentTransfer ?parent .
+  OPTIONAL { ?xfer rdfs:label ?xferLabel }
+}
+GROUP BY ?xfer ?xferLabel
+HAVING (COUNT(?parent) > 1)
+ORDER BY DESC(?parentCount) ?xfer

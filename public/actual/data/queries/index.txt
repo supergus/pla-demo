@@ -13,3 +13,7 @@ q12-incomplete-lines.rq
 q13-total-company-margin.rq
 q14-workbook-company-margin.rq
 q15-interco-supply-chain.rq
+q16-interco-plant-loops.rq
+q17-interco-unapproved-loops.rq
+q18-interco-multi-parent.rq
+q19-interco-transfer-iri-loops.rq

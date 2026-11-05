@@ -13,8 +13,8 @@
 
 <http://pcaq.local/ontology> a owl:Ontology ;
     rdfs:label "PCAQ ontology (thin draft)" ;
-    rdfs:comment "Quote tree of a PCAQ workbook: Program Data -> (imported estimate / Costing_Summary) -> Parts Data cost breakdown -> Sales Price N -> Proposed!O -> Volume LTA Royalty -> yearly selling prices (Y1..Y8, SOP-relative). Plus the SQR-database field map seen in samples B/C. v0.2: intercompany transfers (Sample A–D AK/AL/S9/ICC), required producing/receiving plants (UnresolvedPlant placeholders allowed), multi-level parentTransfer, total company margin = FG + IC tree." ;
-    owl:versionInfo "0.2.0-draft" .
+    rdfs:comment "Quote tree of a PCAQ workbook: Program Data -> (imported estimate / Costing_Summary) -> Parts Data cost breakdown -> Sales Price N -> Proposed!O -> Volume LTA Royalty -> yearly selling prices (Y1..Y8, SOP-relative). Plus the SQR-database field map seen in samples B/C. v0.3: intercompany transfers with loops allowed (sum each transfer IRI once); approvedLoop marker; shipsTo plant edges for cycle detection; plant register pattern. Producing/receiving required (UnresolvedPlant OK)." ;
+    owl:versionInfo "0.3.0-draft" .
 
 # ---------- annotation properties (traceability back to the workbook) ----------
 pcaq:sourceSheet a owl:AnnotationProperty ; rdfs:label "source sheet" ;
@@ -326,7 +326,7 @@ pcaq:FinishedGoodsMargin a owl:Class ; rdfs:subClassOf pcaq:MarginView ; rdfs:la
     rdfs:comment "Selling-plant margin on the customer price (Proposed plant profit / Sign-off Plant Margin / ROS excl IC)." ;
     pcaq:sourceSheet "Proposed" , "Sign-off" , "Summary by Tax Entity" .
 pcaq:IntercompanyMargin a owl:Class ; rdfs:subClassOf pcaq:MarginView ; rdfs:label "intercompany margin (tree)" ;
-    rdfs:comment "Sum of IC margins over the transfer tree for a FG line (roots + nested via ^parentTransfer*)." .
+    rdfs:comment "Sum of IC margins over distinct IntercompanyTransfer IRIs reachable from the FG line (hasIntercompanyTransfer/^parentTransfer*). Each transfer counts once — safe with diamonds and loops." .
 pcaq:TotalCompanyMargin a owl:Class ; rdfs:subClassOf pcaq:MarginView ; rdfs:label "total company margin" ;
     rdfs:comment "Finished-goods plant margin + intercompany margin tree. Open: whether purchased-ex-IC also hides more IC (Q4)." ;
     pcaq:openQuestion "Count only AK tree, or also interco buried inside purchased material Q?" .
@@ -344,3 +344,24 @@ pcaq:marginScope a owl:DatatypeProperty ; rdfs:label "margin scope" ;
     rdfs:comment "'perPiece' or 'averageAnnualVolume'." .
 pcaq:derivedFromTransfer a owl:ObjectProperty ; rdfs:label "derived from transfer" ;
     rdfs:domain pcaq:IntercompanyMargin ; rdfs:range pcaq:IntercompanyTransfer .
+
+# --- v0.3 loops, shipsTo, approvedLoop, plant register ---
+pcaq:shipsTo a owl:ObjectProperty ; rdfs:label "ships to (IC plant edge)" ;
+    rdfs:domain pcaq:Plant ; rdfs:range pcaq:Plant ;
+    rdfs:comment "One IntercompanyTransfer leg as a plant→plant edge (producing shipsTo receiving). Used to detect plant cycles with ?p pcaq:shipsTo+ ?p. Loops (A→B→A) are allowed and often intentional." .
+
+pcaq:approvedLoop a owl:DatatypeProperty ; rdfs:label "approved loop" ;
+    rdfs:domain pcaq:IntercompanyTransfer ; rdfs:range xsd:boolean ;
+    rdfs:comment "True when this transfer leg participates in an intentional plant/transfer loop and should be excluded from loop warnings. Default/absent = not approved (warning candidate)." .
+
+pcaq:parentTransfer rdfs:comment "Multi-level IC: this transfer feeds the parent transfer (child→parent). NOT functional: a transfer may list multiple parents (diamond). Loops in the parentTransfer graph are allowed; margin rollups MUST DISTINCT on transfer IRI so each leg counts once. Tree walk: hasIntercompanyTransfer/^parentTransfer* with DISTINCT ?xfer." .
+
+pcaq:PlantRegister a owl:Class ; rdfs:label "plant register" ;
+    rdfs:comment "Catalog of company plants (private spine holds the real ~26; public demo stays fictional)." .
+pcaq:hasRegisterPlant a owl:ObjectProperty ; rdfs:label "has register plant" ;
+    rdfs:domain pcaq:PlantRegister ; rdfs:range pcaq:Plant .
+pcaq:plantCode a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "plant code" ;
+    rdfs:domain pcaq:Plant ; rdfs:range xsd:string ;
+    rdfs:comment "Stable plant identifier (SAP plant code when known)." .
+pcaq:plantName a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "plant name" ;
+    rdfs:domain pcaq:Plant ; rdfs:range xsd:string .

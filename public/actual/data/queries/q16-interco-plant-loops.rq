@@ -1,0 +1,18 @@
+# Q16: Plant-level IC loops (a plant reappears on a shipsTo+ path). List legs, margins, approvedLoop.
+# Loops are allowed; approvedLoop true = intentional (exclude from warnings).
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT DISTINCT ?loopPlant ?plantLabel ?leg ?producing ?receiving ?marginPc ?marginVol ?approved
+WHERE {
+  ?loopPlant a pcaq:Plant ; pcaq:shipsTo+ ?loopPlant .
+  OPTIONAL { ?loopPlant rdfs:label ?plantLabel }
+  ?leg a pcaq:IntercompanyTransfer ;
+       pcaq:producingPlant ?pp ; pcaq:receivingPlant ?rp ;
+       pcaq:intercompanyMarginAmount ?marginPc .
+  ?pp rdfs:label ?producing . ?rp rdfs:label ?receiving .
+  # leg touches the loop: either endpoint is on a cycle, or both ends participate in shipsTo+ cycle
+  FILTER(?pp = ?loopPlant || ?rp = ?loopPlant)
+  OPTIONAL { ?leg pcaq:intercompanyMarginAtVolume ?marginVol }
+  OPTIONAL { ?leg pcaq:approvedLoop ?approved }
+}
+ORDER BY ?loopPlant ?leg

@@ -60,3 +60,13 @@ shp:IntercompanyMarginShape a sh:NodeShape ;
     sh:property
       [ sh:path pcaq:marginAmount ; sh:datatype xsd:decimal ; sh:minCount 1 ; sh:message "IC MARGIN has no amount" ] ,
       [ sh:path pcaq:marginScope ; sh:datatype xsd:string ; sh:minCount 1 ; sh:message "IC MARGIN needs scope" ] .
+
+# v0.3: approvedLoop is optional boolean; producing/receiving still required (UnresolvedPlant OK).
+shp:ApprovedLoopShape a sh:NodeShape ;
+    sh:targetClass pcaq:IntercompanyTransfer ;
+    sh:property [
+      sh:path pcaq:approvedLoop ;
+      sh:datatype xsd:boolean ;
+      sh:maxCount 1 ;
+      sh:message "approvedLoop must be a boolean if present"
+    ] .
