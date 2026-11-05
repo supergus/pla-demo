@@ -1,0 +1,9 @@
+# Q19: Cycles in the parentTransfer graph (transfer IRI returns to itself via parentTransfer+)
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT DISTINCT ?xfer ?label ?approved WHERE {
+  ?xfer a pcaq:IntercompanyTransfer ; pcaq:parentTransfer+ ?xfer .
+  OPTIONAL { ?xfer rdfs:label ?label }
+  OPTIONAL { ?xfer pcaq:approvedLoop ?approved }
+}
+ORDER BY ?xfer
