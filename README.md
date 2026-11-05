@@ -37,7 +37,10 @@ The repo data file for RFQ-1002 has a single 500 break.
 `public/actual/` is the static build of the private repo **supergus/pcaq-viewer** (thin structural OWL of the PCAQ quote
 workbook + fictional demo data; no workbooks, prices, customers or CER numbers). It is served at
 https://pla.chriscouch.net/actual/ behind the same "Secret?" gate as the rest of the site (root `functions/_middleware.js`
-covers every path; `tests/actual-gated.test.mjs` checks it). The landing page links to it. Do not edit `public/actual/` by
+covers every path; `tests/actual-gated.test.mjs` checks it). The landing page links to it.
+
+## Leaf Tender at `/leaf-tender/`
+Guided leaf/gap completer (separate Worker `leaf-tender`, proxied behind the same Secret? gate via the `LEAF_TENDER` service binding). Synthetic demo data only. Do not edit `public/actual/` by
 hand; refresh it with `tools/sync-actual.sh /path/to/pcaq-viewer` (records the source commit in `public/actual/SOURCE.txt`).
 
 ## Data and vendored libraries
