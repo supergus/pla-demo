@@ -1,7 +1,7 @@
-# rfq-demo: PLA management console (v2)
+# pla-demo: PLA management console (v2)
 
 A live management console for one **Program Lifecycle Agent (PLA)** run on a sample RFQ, built on the
-[supergus/rfq-ontology](https://github.com/supergus/rfq-ontology) OWL ontology.
+tutorial OWL ontology in [supergus/pla-agents/ontology](https://github.com/supergus/pla-agents/tree/main/ontology).
 Static site, no backend, no secrets, no API keys. Site files live in [`public/`](public/) (Cloudflare Pages output dir).
 All libraries are vendored in `public/vendor/` (no CDN at runtime).
 
@@ -66,10 +66,9 @@ python tools/e2e.py http://127.0.0.1:8000/ shots               # headless end-to
 
 
 ## Related repositories
-- [supergus/rfq-ontology](https://github.com/supergus/rfq-ontology) — tutorial OWL ontology for the RFQ-to-quote process (vocabulary this demo loads).
-- [supergus/rfq-agents](https://github.com/supergus/rfq-agents) — PLA orchestrator and tools; pins rfq-ontology via `ontology.lock`.
-- This repo (`rfq-demo`) — live management console / quote demo at https://pla.chriscouch.net.
-- Leaf Tender is a separate ontology management project hosted at https://leaftender.chriscouch.net (not part of this RFQ demo trio).
+- [supergus/pla-agents](https://github.com/supergus/pla-agents) — PLA orchestrator and tools, plus the tutorial OWL ontology in [`ontology/`](https://github.com/supergus/pla-agents/tree/main/ontology) (vocabulary this demo loads; formerly `supergus/rfq-ontology`, now archived).
+- This repo (`pla-demo`) — live management console / quote demo at https://pla.chriscouch.net.
+- Leaf Tender is a separate ontology management project hosted at https://leaftender.chriscouch.net (not part of the PLA demo).
 
 ## Process
 `main` is protected: changes go through a PR and need the "Grok Bot QC" status.

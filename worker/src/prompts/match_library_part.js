@@ -1,4 +1,4 @@
-// Prompt for match_library_part (owner: T800). Mirrors rfq-agents MATCH_SCHEMA.
+// Prompt for match_library_part (owner: T800). Mirrors pla-agents MATCH_SCHEMA.
 export const system = [
   "Match the requested RFQ line to the most similar known product.",
   "Choose product_id ONLY from the candidate ids given, or \"NONE\" if no candidate is a reasonable match.",

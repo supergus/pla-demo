@@ -1,4 +1,4 @@
-// In-browser knowledge base: the real rfq-ontology files (copied into data/), validated with shacl-engine (N3.js parser)
+// In-browser knowledge base: the real ontology files (supergus/pla-agents ontology/) (copied into data/), validated with shacl-engine (N3.js parser)
 // and queried with Oxigraph (SPARQL 1.1, WebAssembly). Everything here runs in the visitor's browser.
 import { Parser, rdf, Validator } from "./vendor/rdf-shacl.js";
 import initOx, * as ox from "./vendor/oxigraph/web.js";

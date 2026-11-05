@@ -40,7 +40,7 @@ to actual token usage (failed runs keep the full estimate). The free daily neuro
 | `RUNS_DB` | D1 `pla-runs` (migrations in `migrations/`) |
 | secrets | `COOKIE_KEY` (= Pages production `COOKIE_KEY`), `COOKIE_KEY_PREVIEW` (= Pages preview `COOKIE_KEY`) |
 
-**Pages side (not in repo files):** the `rfq-demo` Pages project has service binding `PLA → rfq-pla` on both
+**Pages side (not in repo files):** the `rfq-demo` Pages project (Cloudflare name kept; Git source is `supergus/pla-demo`) has service binding `PLA → rfq-pla` on both
 production and preview, set via the Pages API (`PATCH /accounts/:id/pages/projects/rfq-demo`, `deployment_configs.*.services`).
 If COOKIE_KEY is rotated on Pages, set the matching Worker secret too.
 

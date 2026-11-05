@@ -1,5 +1,5 @@
-// Deterministic cost calculator: a JS port of rfq-ontology/scripts/quote.py.
-// Inputs mirror rfq-ontology data/reference.ttl + data/rfq-1001.ttl (see docs/worked-example.md).
+// Deterministic cost calculator: a JS port of pla-agents ontology/scripts/quote.py.
+// Inputs mirror pla-agents ontology/data/reference.ttl + data/rfq-1001.ttl (see docs/worked-example.md).
 export const MODEL = {
   product: "BRK-100 welded mounting bracket (category: Structural brackets)",
   quoteDate: "2026-10-27",
