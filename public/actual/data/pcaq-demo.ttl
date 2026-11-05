@@ -10,12 +10,12 @@ ex:Region-NA a pcaq:Region ; rdfs:label "North America" .
 ex:TaxEntity-DemoUS a pcaq:TaxEntity ; rdfs:label "DemoCo US LLC (fictional)" .
 ex:TaxEntity-DemoMX a pcaq:TaxEntity ; rdfs:label "DemoCo MX (fictional)" .
 ex:TaxEntity-DemoCA a pcaq:TaxEntity ; rdfs:label "DemoCo CA Inc (fictional)" .
-ex:PlantNorth a pcaq:Plant ; rdfs:label "Plant North" ; pcaq:inRegion ex:Region-NA ; pcaq:ownedByTaxEntity ex:TaxEntity-DemoUS .
-ex:PlantSouth a pcaq:Plant ; rdfs:label "Plant South" ; pcaq:inRegion ex:Region-NA ; pcaq:ownedByTaxEntity ex:TaxEntity-DemoMX .
-ex:PlantEast a pcaq:Plant ; rdfs:label "Plant East" ; pcaq:inRegion ex:Region-NA ; pcaq:ownedByTaxEntity ex:TaxEntity-DemoCA .
+ex:PlantNorth a pcaq:Party , pcaq:Plant ; rdfs:label "Plant North" ; pcaq:inRegion ex:Region-NA ; pcaq:ownedByTaxEntity ex:TaxEntity-DemoUS .
+ex:PlantSouth a pcaq:Party , pcaq:Plant ; rdfs:label "Plant South" ; pcaq:inRegion ex:Region-NA ; pcaq:ownedByTaxEntity ex:TaxEntity-DemoMX .
+ex:PlantEast a pcaq:Party , pcaq:Plant ; rdfs:label "Plant East" ; pcaq:inRegion ex:Region-NA ; pcaq:ownedByTaxEntity ex:TaxEntity-DemoCA .
 # Placeholders for supply-chain links not named in a PCAQ workbook (AK-only residual case)
-ex:Plant-Unknown-Producing-P002 a pcaq:Plant , pcaq:UnresolvedPlant ; rdfs:label "Unresolved producing plant (P-002 IC)" .
-ex:Plant-Unknown-Receiving-P002 a pcaq:Plant , pcaq:UnresolvedPlant ; rdfs:label "Unresolved receiving plant (P-002 IC)" .
+ex:Plant-Unknown-Producing-P002 a pcaq:Party , pcaq:Plant , pcaq:UnresolvedPlant ; rdfs:label "Unresolved producing plant (P-002 IC)" .
+ex:Plant-Unknown-Receiving-P002 a pcaq:Party , pcaq:Plant , pcaq:UnresolvedPlant ; rdfs:label "Unresolved receiving plant (P-002 IC)" .
 ex:PT-Hoses a pcaq:ProductType ; rdfs:label "Section 1: hoses" .
 ex:PT-Connectors a pcaq:ProductType ; rdfs:label "Section 2: connectors" .
 
@@ -270,7 +270,7 @@ ex:TotMargin-P-002-vol a pcaq:TotalCompanyMargin ; rdfs:label "P-002 total compa
     pcaq:marginAmount 34224.00 ; pcaq:marginScope "averageAnnualVolume" .
 
 # Unapproved 2-cycle on P-003 (warning candidate): South ↔ a fictional PlantWest
-ex:PlantWest a pcaq:Plant ; rdfs:label "Plant West" ; pcaq:inRegion ex:Region-NA ; pcaq:ownedByTaxEntity ex:TaxEntity-DemoUS ; pcaq:plantCode "WEST" .
+ex:PlantWest a pcaq:Party , pcaq:Plant ; rdfs:label "Plant West" ; pcaq:inRegion ex:Region-NA ; pcaq:ownedByTaxEntity ex:TaxEntity-DemoUS ; pcaq:plantCode "WEST" .
 ex:Part-SC-LOOP a pcaq:Part , pcaq:IntercompanySubcomponent ; rdfs:label "Demo IC loop washer" ; pcaq:partNumber "SC-LOOP" .
 ex:Xfer-South-to-West a pcaq:IntercompanyTransfer ; rdfs:label "IC South → West (unapproved loop leg)" ;
     pcaq:ofSubcomponent ex:Part-SC-LOOP ; pcaq:producingPlant ex:PlantSouth ; pcaq:receivingPlant ex:PlantWest ;
@@ -300,3 +300,140 @@ ex:ICMargin-P-003-vol a pcaq:IntercompanyMargin ; rdfs:label "P-003 IC margin @ 
     pcaq:derivedFromTransfer ex:Xfer-South-to-West , ex:Xfer-West-to-South .
 ex:TotMargin-P-003-vol a pcaq:TotalCompanyMargin ; rdfs:label "P-003 total company margin @ avg vol" ;
     pcaq:marginAmount 142000.00 ; pcaq:marginScope "averageAnnualVolume" .
+
+
+ex:Supplier-AcmeFasteners a pcaq:Party , pcaq:Supplier ; rdfs:label "Acme Fasteners (fictional)" .
+ex:Supplier-GlobalMold a pcaq:Party , pcaq:Supplier ; rdfs:label "Global Mold Co (fictional)" .
+ex:Place-ShanghaiPort a pcaq:NamedPlace ; rdfs:label "Shanghai port" ; pcaq:placeName "Shanghai, CN" .
+ex:Place-DetroitDock a pcaq:NamedPlace ; rdfs:label "Detroit dock" ; pcaq:placeName "Detroit, US" .
+
+# Ship-from locations (fictional) + hazard tags
+ex:Loc-PlantEast a pcaq:Location , pcaq:PlantLocation ; rdfs:label "Plant East site (Toronto)" ;
+    pcaq:locationCountry "Canada" ; pcaq:locationRegion "Ontario" ; pcaq:locationCity "Toronto" ;
+    pcaq:latitude 43.6532 ; pcaq:longitude -79.3832 ; pcaq:hazardSeverity 1 ;
+    pcaq:hasHazardTag pcaq:FloodRisk .
+ex:Loc-PlantNorth a pcaq:Location , pcaq:PlantLocation ; rdfs:label "Plant North site (Detroit)" ;
+    pcaq:locationCountry "United States" ; pcaq:locationRegion "Michigan" ; pcaq:locationCity "Detroit" ;
+    pcaq:latitude 42.3314 ; pcaq:longitude -83.0458 ; pcaq:hazardSeverity 2 ;
+    pcaq:hasHazardTag pcaq:FloodRisk .
+ex:Loc-AcmeShanghai a pcaq:Location , pcaq:WarehouseLocation ; rdfs:label "Acme Fasteners WH (Shanghai)" ;
+    pcaq:locationCountry "China" ; pcaq:locationRegion "Shanghai" ; pcaq:locationCity "Shanghai" ;
+    pcaq:latitude 31.2304 ; pcaq:longitude 121.4737 ; pcaq:hazardSeverity 4 ;
+    pcaq:hasHazardTag pcaq:EarthquakeRisk , pcaq:TyphoonRisk , pcaq:GeopoliticalRisk .
+ex:Loc-GlobalMold-Detroit a pcaq:Location , pcaq:WarehouseLocation ; rdfs:label "Global Mold WH (Detroit)" ;
+    pcaq:locationCountry "United States" ; pcaq:locationRegion "Michigan" ; pcaq:locationCity "Detroit" ;
+    pcaq:latitude 42.36 ; pcaq:longitude -83.05 ; pcaq:hazardSeverity 2 ;
+    pcaq:hasHazardTag pcaq:FloodRisk .
+ex:Loc-Unknown-P004 a pcaq:Location , pcaq:UnresolvedLocation ; rdfs:label "Unresolved ship-from (demo placeholder)" ;
+    pcaq:locationCountry "Unknown" ; pcaq:locationCity "Unknown" .
+ex:PlantEast pcaq:locationOfPlant ex:Loc-PlantEast .
+ex:PlantNorth pcaq:locationOfPlant ex:Loc-PlantNorth .
+
+# Sourcing restriction table (separate individuals; fictional — real denylist stays private)
+ex:Restrict-China-Tariff a pcaq:SourcingRestriction ; rdfs:label "Demo: no new China fastener spend (tariff)" ;
+    pcaq:restrictsCountry "China" ; pcaq:restrictionReason pcaq:TariffRestriction ;
+    pcaq:restrictionEffectiveFrom "2025-01-01"^^xsd:date ; pcaq:restrictionSeverity 4 ;
+    pcaq:restrictionSource "Demo Trade Desk" ; pcaq:restrictionActive true .
+ex:Restrict-Shanghai-EQ a pcaq:SourcingRestriction ; rdfs:label "Demo: Shanghai site policy hold (earthquake zone)" ;
+    pcaq:restrictsLocation ex:Loc-AcmeShanghai ; pcaq:restrictionReason pcaq:PolicyRestriction ;
+    pcaq:restrictionEffectiveFrom "2024-06-01"^^xsd:date ; pcaq:restrictionSeverity 3 ;
+    pcaq:restrictionSource "Demo Risk Committee" ; pcaq:restrictionActive true .
+ex:Restrict-Expired-RU a pcaq:SourcingRestriction ; rdfs:label "Demo: expired country ban (should NOT hit)" ;
+    pcaq:restrictsCountry "Russia" ; pcaq:restrictionReason pcaq:SanctionsRestriction ;
+    pcaq:restrictionEffectiveFrom "2022-01-01"^^xsd:date ; pcaq:restrictionEffectiveTo "2025-12-31"^^xsd:date ;
+    pcaq:restrictionSeverity 5 ; pcaq:restrictionSource "Demo Compliance" ; pcaq:restrictionActive true .
+
+# Lane A: Interco East → North for SC-100 / P-001 (we own from origin dock; value at transfer price)
+ex:Lane-IC-East-North a pcaq:ShipmentLane , pcaq:IntercompanyShipmentLane ; rdfs:label "IC lane East→North (SC-100)" ;
+    pcaq:laneFrom ex:PlantEast ; pcaq:laneTo ex:PlantNorth ;
+    pcaq:shipsFromLocation ex:Loc-PlantEast ;
+    pcaq:forIntercompanyTransfer ex:Xfer-SC-100-to-P-001 ;
+    pcaq:ownershipTransferPoint pcaq:AtOriginPlantDock ;
+    pcaq:riskTransferPoint pcaq:AtOriginPlantDock ;
+    pcaq:bookingPoint pcaq:AtDestinationPlantDock ;
+    pcaq:hasTransportMode pcaq:Truck ;
+    pcaq:totalTransitDays 5.0 ; pcaq:ownedTransitDays 5.0 ;
+    pcaq:shipmentsPerYear 52 ; pcaq:lotSizeStandard 2500 ; pcaq:lotSizeMin 1000 ;
+    pcaq:productionLeadTimeDays 10 ;
+    pcaq:laneCurrency ex:USD ; pcaq:valuationBasis pcaq:AtTransferPrice ;
+    pcaq:unitValuationAmount 2.20 ; pcaq:weOwnInTransit true ;
+    pcaq:ownedInTransitQty 1643.8356 ; pcaq:ownedInTransitValue 3616.4383 ;
+    pcaq:lotAdjustedInTransitQty 1780.8219 ;
+    pcaq:hasTransitLeg ex:Leg-IC-EN-1 ; pcaq:hasLandedCostItem ex:LC-IC-EN-Freight .
+ex:Leg-IC-EN-1 a pcaq:TransitLeg ; rdfs:label "truck main haul" ; pcaq:legKind pcaq:LegMainHaul ;
+    pcaq:legOrder 1 ; pcaq:averageDays 5.0 ; pcaq:variabilityDays 1.0 .
+ex:LC-IC-EN-Freight a pcaq:FreightCost ; rdfs:label "IC truck freight /pc" ; pcaq:landedCostPerPiece 0.05 .
+ex:Line-P-001 pcaq:hasShipmentLane ex:Lane-IC-East-North .
+
+# Lane B: Supplier FCA → Plant North for P-002 (we own after carrier handover)
+ex:Lane-Sup-FCA-P002 a pcaq:ShipmentLane , pcaq:SupplierShipmentLane ; rdfs:label "Supplier FCA lane → North (P-002)" ;
+    pcaq:laneFrom ex:Supplier-AcmeFasteners ; pcaq:laneTo ex:PlantNorth ;
+    pcaq:shipsFromLocation ex:Loc-AcmeShanghai ;
+    pcaq:hasIncoterm pcaq:FCA ; pcaq:incotermPlace ex:Place-ShanghaiPort ;
+    pcaq:ownershipTransferPoint pcaq:AtCarrierHandover ;
+    pcaq:riskTransferPoint pcaq:AtCarrierHandover ;
+    pcaq:bookingPoint pcaq:AtBuyerDock ;
+    pcaq:ownershipOverride false ;
+    pcaq:hasTransportMode pcaq:Multimodal ;
+    pcaq:totalTransitDays 25.0 ; pcaq:ownedTransitDays 24.0 ; pcaq:ownedAtSupplierDockDays 1.0 ;
+    pcaq:shipmentsPerYear 40 ; pcaq:lotSizeStandard 2000 ; pcaq:lotSizeMin 500 ;
+    pcaq:productionLeadTimeDays 21 ;
+    pcaq:laneCurrency ex:USD ; pcaq:valuationBasis pcaq:AtPurchasePrice ;
+    pcaq:unitValuationAmount 1.05 ; pcaq:weOwnInTransit true ;
+    pcaq:ownedInTransitQty 5260.2740 ; pcaq:ownedInTransitValue 5523.2877 ;
+    pcaq:ownedAtDockQty 219.1781 ; pcaq:lotAdjustedInTransitQty 5260.2740 ;
+    pcaq:hasTransitLeg ex:Leg-FCA-1 , ex:Leg-FCA-2 , ex:Leg-FCA-3 , ex:Leg-FCA-4 ;
+    pcaq:hasLandedCostItem ex:LC-FCA-Freight , ex:LC-FCA-Duty , ex:LC-FCA-Ins .
+ex:Leg-FCA-1 a pcaq:TransitLeg ; rdfs:label "dock to port" ; pcaq:legKind pcaq:LegOriginDrayage ;
+    pcaq:legOrder 1 ; pcaq:averageDays 2.0 ; pcaq:variabilityDays 0.5 .
+ex:Leg-FCA-2 a pcaq:TransitLeg ; rdfs:label "ocean" ; pcaq:legKind pcaq:LegMainHaul ;
+    pcaq:legOrder 2 ; pcaq:averageDays 18.0 ; pcaq:variabilityDays 3.0 .
+ex:Leg-FCA-3 a pcaq:TransitLeg ; rdfs:label "customs" ; pcaq:legKind pcaq:LegCustoms ;
+    pcaq:legOrder 3 ; pcaq:averageDays 3.0 ; pcaq:variabilityDays 2.0 .
+ex:Leg-FCA-4 a pcaq:TransitLeg ; rdfs:label "final mile" ; pcaq:legKind pcaq:LegFinalMile ;
+    pcaq:legOrder 4 ; pcaq:averageDays 2.0 ; pcaq:variabilityDays 0.5 .
+ex:LC-FCA-Freight a pcaq:FreightCost ; rdfs:label "FCA freight /pc" ; pcaq:landedCostPerPiece 0.12 .
+ex:LC-FCA-Duty a pcaq:DutyCost ; rdfs:label "FCA duty /pc" ; pcaq:landedCostPerPiece 0.04 .
+ex:LC-FCA-Ins a pcaq:InsuranceCost ; rdfs:label "FCA insurance /pc" ; pcaq:landedCostPerPiece 0.01 .
+ex:Line-P-002 pcaq:hasShipmentLane ex:Lane-Sup-FCA-P002 .
+
+# Lane C: Supplier DDP → Plant South for P-003 (supplier owns in transit → our owned qty = 0)
+ex:Lane-Sup-DDP-P003 a pcaq:ShipmentLane , pcaq:SupplierShipmentLane ; rdfs:label "Supplier DDP lane → South (P-003)" ;
+    pcaq:laneFrom ex:Supplier-GlobalMold ; pcaq:laneTo ex:PlantSouth ;
+    pcaq:shipsFromLocation ex:Loc-GlobalMold-Detroit ;
+    pcaq:hasIncoterm pcaq:DDP ; pcaq:incotermPlace ex:Place-DetroitDock ;
+    pcaq:ownershipTransferPoint pcaq:AtBuyerDock ;
+    pcaq:riskTransferPoint pcaq:AtBuyerDock ;
+    pcaq:bookingPoint pcaq:AtBuyerDock ;
+    pcaq:ownershipOverride false ;
+    pcaq:hasTransportMode pcaq:Truck ;
+    pcaq:totalTransitDays 12.0 ; pcaq:ownedTransitDays 0.0 ;
+    pcaq:shipmentsPerYear 24 ; pcaq:lotSizeStandard 5000 ;
+    pcaq:productionLeadTimeDays 14 ;
+    pcaq:laneCurrency ex:USD ; pcaq:valuationBasis pcaq:AtPurchasePrice ;
+    pcaq:unitValuationAmount 3.95 ; pcaq:weOwnInTransit false ;
+    pcaq:ownedInTransitQty 0.0 ; pcaq:ownedInTransitValue 0.0 ;
+    pcaq:hasTransitLeg ex:Leg-DDP-1 ; pcaq:hasLandedCostItem ex:LC-DDP-Freight .
+ex:Leg-DDP-1 a pcaq:TransitLeg ; rdfs:label "DDP truck (supplier-owned)" ; pcaq:legKind pcaq:LegMainHaul ;
+    pcaq:legOrder 1 ; pcaq:averageDays 12.0 ; pcaq:variabilityDays 2.0 .
+ex:LC-DDP-Freight a pcaq:FreightCost ; rdfs:label "DDP freight in supplier price" ; pcaq:landedCostPerPiece 0.00 .
+ex:Line-P-003 pcaq:hasShipmentLane ex:Lane-Sup-DDP-P003 .
+
+# Lane D: Interco loop leg North → East (return sleeve) — ownership at origin; valued at transfer price
+ex:Lane-IC-North-East-Loop a pcaq:ShipmentLane , pcaq:IntercompanyShipmentLane ; rdfs:label "IC loop lane North→East (SC-RET)" ;
+    pcaq:laneFrom ex:PlantNorth ; pcaq:laneTo ex:PlantEast ;
+    pcaq:shipsFromLocation ex:Loc-PlantNorth ;
+    pcaq:forIntercompanyTransfer ex:Xfer-SC-RET-North-to-East ;
+    pcaq:ownershipTransferPoint pcaq:AtOriginPlantDock ;
+    pcaq:riskTransferPoint pcaq:AtOriginPlantDock ;
+    pcaq:bookingPoint pcaq:AtDestinationPlantDock ;
+    pcaq:hasTransportMode pcaq:Truck ;
+    pcaq:totalTransitDays 3.0 ; pcaq:ownedTransitDays 3.0 ;
+    pcaq:shipmentsPerYear 52 ; pcaq:lotSizeStandard 1000 ;
+    pcaq:laneCurrency ex:USD ; pcaq:valuationBasis pcaq:AtTransferPrice ;
+    pcaq:unitValuationAmount 0.33 ; pcaq:weOwnInTransit true ;
+    pcaq:ownedInTransitQty 986.3014 ; pcaq:ownedInTransitValue 325.4795 ;
+    pcaq:hasTransitLeg ex:Leg-IC-NE-1 .
+ex:Leg-IC-NE-1 a pcaq:TransitLeg ; rdfs:label "loop truck haul" ; pcaq:legKind pcaq:LegMainHaul ;
+    pcaq:legOrder 1 ; pcaq:averageDays 3.0 ; pcaq:variabilityDays 0.5 .
+ex:Line-P-001 pcaq:hasShipmentLane ex:Lane-IC-North-East-Loop .

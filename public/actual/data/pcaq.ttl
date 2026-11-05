@@ -13,8 +13,8 @@
 
 <http://pcaq.local/ontology> a owl:Ontology ;
     rdfs:label "PCAQ ontology (thin draft)" ;
-    rdfs:comment "Quote tree of a PCAQ workbook: Program Data -> (imported estimate / Costing_Summary) -> Parts Data cost breakdown -> Sales Price N -> Proposed!O -> Volume LTA Royalty -> yearly selling prices (Y1..Y8, SOP-relative). Plus the SQR-database field map seen in samples B/C. v0.3: intercompany transfers with loops allowed (sum each transfer IRI once); approvedLoop marker; shipsTo plant edges for cycle detection; plant register pattern. Producing/receiving required (UnresolvedPlant OK)." ;
-    owl:versionInfo "0.3.0-draft" .
+    rdfs:comment "Quote tree of a PCAQ workbook: Program Data -> (imported estimate / Costing_Summary) -> Parts Data cost breakdown -> Sales Price N -> Proposed!O -> Volume LTA Royalty -> yearly selling prices (Y1..Y8, SOP-relative). Plus the SQR-database field map seen in samples B/C. v0.4: + inventory planning shipment lanes (Incoterms 2020, ownership/risk/booking points, multi-leg transit, lot/frequency, landed cost, in-transit qty/$) + supply-chain risk (ship-from Location with country/region/city/lat-long and hazard tags) + SourcingRestriction denylist (country/region/location, effective dates, separate from quote graphs). Interco loops from v0.3 retained." ;
+    owl:versionInfo "0.4.0" .
 
 # ---------- annotation properties (traceability back to the workbook) ----------
 pcaq:sourceSheet a owl:AnnotationProperty ; rdfs:label "source sheet" ;
@@ -365,3 +365,241 @@ pcaq:plantCode a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "pla
     rdfs:comment "Stable plant identifier (SAP plant code when known)." .
 pcaq:plantName a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "plant name" ;
     rdfs:domain pcaq:Plant ; rdfs:range xsd:string .
+
+# =====================================================================
+# Inventory planning — shipment lanes (v0.4)
+# =====================================================================
+# Goal: estimate owned in-transit inventory qty and $ for supplier and interco flows.
+# qty ≈ annualVolume × ownedTransitDays / 365 (lot/frequency adjustments via shippingLotSize ×
+#       ownedTransitDays × shipmentsPerYear / 365 when discrete batches dominate).
+# Count only goods WE own after the ownership-transfer point (EXW/FCA/FOB → we own in transit;
+# DDP → supplier owns). Interco has no Incoterm rule — store ownershipTransferPoint explicitly.
+
+pcaq:Party a owl:Class ; rdfs:label "party" ;
+    rdfs:comment "Plant or external supplier participating in a shipment lane." .
+pcaq:Supplier a owl:Class ; rdfs:subClassOf pcaq:Party ; rdfs:label "external supplier" .
+pcaq:Plant rdfs:subClassOf pcaq:Party .
+
+pcaq:ShipmentLane a owl:Class ; rdfs:label "shipment lane" ;
+    rdfs:comment "A directed logistics lane from one party to another for a part (supplier or interco)." .
+pcaq:SupplierShipmentLane a owl:Class ; rdfs:subClassOf pcaq:ShipmentLane ; rdfs:label "supplier shipment lane" .
+pcaq:IntercompanyShipmentLane a owl:Class ; rdfs:subClassOf pcaq:ShipmentLane ; rdfs:label "intercompany shipment lane" ;
+    rdfs:comment "Lane for an IntercompanyTransfer; ownershipTransferPoint is REQUIRED (no Incoterm default)." .
+
+pcaq:Incoterm a owl:Class ; rdfs:label "Incoterms 2020 term" .
+pcaq:EXW a pcaq:Incoterm ; rdfs:label "EXW" ; rdfs:comment "Ex Works — buyer owns from seller's premises after making available/pickup." .
+pcaq:FCA a pcaq:Incoterm ; rdfs:label "FCA" ; rdfs:comment "Free Carrier — buyer owns when handed to carrier at named place." .
+pcaq:FAS a pcaq:Incoterm ; rdfs:label "FAS" .
+pcaq:FOB a pcaq:Incoterm ; rdfs:label "FOB" ; rdfs:comment "Free On Board — buyer owns when on board vessel." .
+pcaq:CFR a pcaq:Incoterm ; rdfs:label "CFR" .
+pcaq:CIF a pcaq:Incoterm ; rdfs:label "CIF" .
+pcaq:CPT a pcaq:Incoterm ; rdfs:label "CPT" .
+pcaq:CIP a pcaq:Incoterm ; rdfs:label "CIP" .
+pcaq:DAP a pcaq:Incoterm ; rdfs:label "DAP" ; rdfs:comment "Delivered at Place — seller typically owns until destination place." .
+pcaq:DPU a pcaq:Incoterm ; rdfs:label "DPU" .
+pcaq:DDP a pcaq:Incoterm ; rdfs:label "DDP" ; rdfs:comment "Delivered Duty Paid — supplier owns through delivery; buyer owned-in-transit ≈ 0." .
+
+pcaq:NamedPlace a owl:Class ; rdfs:label "named place" ;
+    rdfs:comment "Incoterms named place / port / location string." .
+pcaq:placeName a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:domain pcaq:NamedPlace ; rdfs:range xsd:string .
+
+pcaq:TransferPoint a owl:Class ; rdfs:label "transfer point (ownership / risk / title / booking)" .
+pcaq:AtSupplierDock a pcaq:TransferPoint ; rdfs:label "at supplier dock" .
+pcaq:AtCarrierHandover a pcaq:TransferPoint ; rdfs:label "at carrier handover" .
+pcaq:OnBoardVessel a pcaq:TransferPoint ; rdfs:label "on board vessel" .
+pcaq:AtDestinationPlace a pcaq:TransferPoint ; rdfs:label "at destination place" .
+pcaq:AtBuyerDock a pcaq:TransferPoint ; rdfs:label "at buyer dock" .
+pcaq:AtOriginPlantDock a pcaq:TransferPoint ; rdfs:label "at origin plant dock (interco)" .
+pcaq:AtDestinationPlantDock a pcaq:TransferPoint ; rdfs:label "at destination plant dock (interco)" .
+
+pcaq:TransportMode a owl:Class ; rdfs:label "transport mode" .
+pcaq:Ocean a pcaq:TransportMode ; rdfs:label "ocean" .
+pcaq:Air a pcaq:TransportMode ; rdfs:label "air" .
+pcaq:Truck a pcaq:TransportMode ; rdfs:label "truck" .
+pcaq:Rail a pcaq:TransportMode ; rdfs:label "rail" .
+pcaq:Multimodal a pcaq:TransportMode ; rdfs:label "multimodal" .
+
+pcaq:TransitLeg a owl:Class ; rdfs:label "transit leg" ;
+    rdfs:comment "One segment of multi-leg transit (dock→port, ocean/air/truck/rail, customs, final mile)." .
+pcaq:TransitLegKind a owl:Class ; rdfs:label "transit leg kind" .
+pcaq:LegOriginDrayage a pcaq:TransitLegKind ; rdfs:label "origin dock to port/terminal" .
+pcaq:LegMainHaul a pcaq:TransitLegKind ; rdfs:label "main haul (ocean/air/truck/rail)" .
+pcaq:LegCustoms a pcaq:TransitLegKind ; rdfs:label "customs / clearance" .
+pcaq:LegFinalMile a pcaq:TransitLegKind ; rdfs:label "final leg to receiving dock" .
+pcaq:LegInPlant a pcaq:TransitLegKind ; rdfs:label "in-plant / staging" .
+
+pcaq:LandedCostItem a owl:Class ; rdfs:label "landed-cost item" .
+pcaq:FreightCost a owl:Class ; rdfs:subClassOf pcaq:LandedCostItem ; rdfs:label "freight" .
+pcaq:DutyCost a owl:Class ; rdfs:subClassOf pcaq:LandedCostItem ; rdfs:label "duty" .
+pcaq:InsuranceCost a owl:Class ; rdfs:subClassOf pcaq:LandedCostItem ; rdfs:label "insurance" .
+
+pcaq:ValuationBasis a owl:Class ; rdfs:label "in-transit valuation basis" .
+pcaq:AtStandardCost a pcaq:ValuationBasis ; rdfs:label "at producing/standard cost" .
+pcaq:AtTransferPrice a pcaq:ValuationBasis ; rdfs:label "at transfer price (incl. IC margin)" .
+pcaq:AtPurchasePrice a pcaq:ValuationBasis ; rdfs:label "at purchase / invoice price" .
+
+# --- lane structure ---
+pcaq:hasShipmentLane a owl:ObjectProperty ; rdfs:label "has shipment lane" ;
+    rdfs:domain pcaq:PartLine ; rdfs:range pcaq:ShipmentLane .
+pcaq:laneFrom a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "lane from" ;
+    rdfs:domain pcaq:ShipmentLane ; rdfs:range pcaq:Party .
+pcaq:laneTo a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "lane to" ;
+    rdfs:domain pcaq:ShipmentLane ; rdfs:range pcaq:Party .
+pcaq:forIntercompanyTransfer a owl:ObjectProperty ; rdfs:label "for intercompany transfer" ;
+    rdfs:domain pcaq:IntercompanyShipmentLane ; rdfs:range pcaq:IntercompanyTransfer .
+
+pcaq:hasIncoterm a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "has Incoterm" ;
+    rdfs:domain pcaq:SupplierShipmentLane ; rdfs:range pcaq:Incoterm .
+pcaq:incotermPlace a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "Incoterm named place" ;
+    rdfs:domain pcaq:SupplierShipmentLane ; rdfs:range pcaq:NamedPlace .
+
+pcaq:ownershipTransferPoint a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "ownership (title) transfer point" ;
+    rdfs:domain pcaq:ShipmentLane ; rdfs:range pcaq:TransferPoint ;
+    rdfs:comment "When WE take ownership. Supplier lanes: default from Incoterm unless ownershipOverride true. Interco: always explicit." .
+pcaq:riskTransferPoint a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "risk transfer point" ;
+    rdfs:domain pcaq:ShipmentLane ; rdfs:range pcaq:TransferPoint ;
+    rdfs:comment "Distinct from title/ownership (Incoterms risk vs commercial title)." .
+pcaq:bookingPoint a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "booking / inventory booking point" ;
+    rdfs:domain pcaq:ShipmentLane ; rdfs:range pcaq:TransferPoint .
+pcaq:ownershipOverride a owl:DatatypeProperty ; rdfs:label "contract ownership override" ;
+    rdfs:domain pcaq:SupplierShipmentLane ; rdfs:range xsd:boolean ;
+    rdfs:comment "True when contract overrides the Incoterms-default ownership point." .
+pcaq:defaultOwnershipFromIncoterm a owl:ObjectProperty ; rdfs:label "default ownership from Incoterm" ;
+    rdfs:domain pcaq:Incoterm ; rdfs:range pcaq:TransferPoint .
+
+pcaq:EXW pcaq:defaultOwnershipFromIncoterm pcaq:AtSupplierDock .
+pcaq:FCA pcaq:defaultOwnershipFromIncoterm pcaq:AtCarrierHandover .
+pcaq:FOB pcaq:defaultOwnershipFromIncoterm pcaq:OnBoardVessel .
+pcaq:FAS pcaq:defaultOwnershipFromIncoterm pcaq:OnBoardVessel .
+pcaq:CFR pcaq:defaultOwnershipFromIncoterm pcaq:OnBoardVessel .
+pcaq:CIF pcaq:defaultOwnershipFromIncoterm pcaq:OnBoardVessel .
+pcaq:CPT pcaq:defaultOwnershipFromIncoterm pcaq:AtCarrierHandover .
+pcaq:CIP pcaq:defaultOwnershipFromIncoterm pcaq:AtCarrierHandover .
+pcaq:DAP pcaq:defaultOwnershipFromIncoterm pcaq:AtDestinationPlace .
+pcaq:DPU pcaq:defaultOwnershipFromIncoterm pcaq:AtDestinationPlace .
+pcaq:DDP pcaq:defaultOwnershipFromIncoterm pcaq:AtBuyerDock .
+
+pcaq:hasTransportMode a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:domain pcaq:ShipmentLane ; rdfs:range pcaq:TransportMode .
+pcaq:hasTransitLeg a owl:ObjectProperty ; rdfs:domain pcaq:ShipmentLane ; rdfs:range pcaq:TransitLeg .
+pcaq:legKind a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:domain pcaq:TransitLeg ; rdfs:range pcaq:TransitLegKind .
+pcaq:legOrder a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:domain pcaq:TransitLeg ; rdfs:range xsd:integer .
+pcaq:averageDays a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:domain pcaq:TransitLeg ; rdfs:range xsd:decimal .
+pcaq:variabilityDays a owl:DatatypeProperty ; rdfs:domain pcaq:TransitLeg ; rdfs:range xsd:decimal ;
+    rdfs:comment "Typical +/- days (variability), not a hard SLA." .
+
+pcaq:totalTransitDays a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "total transit days (all legs)" ;
+    rdfs:domain pcaq:ShipmentLane ; rdfs:range xsd:decimal .
+pcaq:ownedTransitDays a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "owned transit days" ;
+    rdfs:domain pcaq:ShipmentLane ; rdfs:range xsd:decimal ;
+    rdfs:comment "Days after ownership transfer until receipt — the days that drive OUR in-transit inventory." .
+pcaq:ownedAtSupplierDockDays a owl:DatatypeProperty ; rdfs:label "owned-at-supplier-dock days after pickup" ;
+    rdfs:domain pcaq:ShipmentLane ; rdfs:range xsd:decimal ;
+    rdfs:comment "Breakout: days we already own while goods wait at supplier dock after pickup (EXW/FCA staging)." .
+
+pcaq:shipmentsPerYear a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "shipping frequency (shipments/year)" ;
+    rdfs:domain pcaq:ShipmentLane ; rdfs:range xsd:decimal .
+pcaq:lotSizeMin a owl:DatatypeProperty ; rdfs:label "min shipping lot size (pcs)" ;
+    rdfs:domain pcaq:ShipmentLane ; rdfs:range xsd:decimal .
+pcaq:lotSizeStandard a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "standard shipping lot / container load (pcs)" ;
+    rdfs:domain pcaq:ShipmentLane ; rdfs:range xsd:decimal .
+pcaq:productionLeadTimeDays a owl:DatatypeProperty ; rdfs:label "production lead-time offset (days)" ;
+    rdfs:domain pcaq:ShipmentLane ; rdfs:range xsd:decimal ;
+    rdfs:comment "Supplier/plant production time before goods are ready to ship — not in-transit, but planning-relevant." .
+
+pcaq:laneCurrency a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:domain pcaq:ShipmentLane ; rdfs:range pcaq:Currency .
+pcaq:hasLandedCostItem a owl:ObjectProperty ; rdfs:domain pcaq:ShipmentLane ; rdfs:range pcaq:LandedCostItem .
+pcaq:landedCostPerPiece a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:domain pcaq:LandedCostItem ; rdfs:range xsd:decimal .
+
+pcaq:valuationBasis a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:domain pcaq:ShipmentLane ; rdfs:range pcaq:ValuationBasis .
+pcaq:unitValuationAmount a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "unit valuation $" ;
+    rdfs:domain pcaq:ShipmentLane ; rdfs:range xsd:decimal ;
+    rdfs:comment "$/pc used for in-transit $ (purchase price, standard cost, or transfer price incl. IC margin)." .
+
+pcaq:weOwnInTransit a owl:DatatypeProperty ; rdfs:label "we own in transit" ;
+    rdfs:domain pcaq:ShipmentLane ; rdfs:range xsd:boolean ;
+    rdfs:comment "False for DDP-like lanes where supplier owns through delivery." .
+
+# Asserted inventory estimates (also recomputed in SPARQL for checks)
+pcaq:ownedInTransitQty a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "owned in-transit qty (pcs)" ;
+    rdfs:domain pcaq:ShipmentLane ; rdfs:range xsd:decimal ;
+    rdfs:comment "≈ annualVolume × ownedTransitDays / 365 (see also lot-adjusted qty)." .
+pcaq:ownedInTransitValue a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "owned in-transit value ($)" ;
+    rdfs:domain pcaq:ShipmentLane ; rdfs:range xsd:decimal .
+pcaq:ownedAtDockQty a owl:DatatypeProperty ; rdfs:label "owned-at-supplier-dock qty" ;
+    rdfs:domain pcaq:ShipmentLane ; rdfs:range xsd:decimal .
+pcaq:lotAdjustedInTransitQty a owl:DatatypeProperty ; rdfs:label "lot-adjusted in-transit qty" ;
+    rdfs:domain pcaq:ShipmentLane ; rdfs:range xsd:decimal ;
+    rdfs:comment "lotSizeStandard × ownedTransitDays × shipmentsPerYear / 365." .
+
+# --- Supply-chain risk: ship-from Location + hazard tags (v0.4) ---
+# Every ShipmentLane (supplier + interco) has a ship-from Location (plant or warehouse).
+# UnresolvedLocation placeholders allowed (same pattern as UnresolvedPlant).
+
+pcaq:Location a owl:Class ; rdfs:label "location" ;
+    rdfs:comment "Physical ship-from site: plant or warehouse. Country / region / city + optional lat/long + hazard tags." .
+pcaq:PlantLocation a owl:Class ; rdfs:subClassOf pcaq:Location ; rdfs:label "plant location" .
+pcaq:WarehouseLocation a owl:Class ; rdfs:subClassOf pcaq:Location ; rdfs:label "warehouse location" .
+pcaq:UnresolvedLocation a owl:Class ; rdfs:subClassOf pcaq:Location ; rdfs:label "unresolved location" ;
+    rdfs:comment "Placeholder when ship-from site is not yet known; satisfies SHACL like UnresolvedPlant." .
+
+pcaq:HazardTag a owl:Class ; rdfs:label "hazard / risk tag" .
+pcaq:EarthquakeRisk a pcaq:HazardTag ; rdfs:label "earthquake" .
+pcaq:FloodRisk a pcaq:HazardTag ; rdfs:label "flood" .
+pcaq:TyphoonRisk a pcaq:HazardTag ; rdfs:label "typhoon / hurricane" .
+pcaq:WildfireRisk a pcaq:HazardTag ; rdfs:label "wildfire" .
+pcaq:GeopoliticalRisk a pcaq:HazardTag ; rdfs:label "geopolitical / tariff risk" .
+pcaq:PortCongestionRisk a pcaq:HazardTag ; rdfs:label "port congestion" .
+pcaq:LaborStrikeRisk a pcaq:HazardTag ; rdfs:label "labor strike" .
+
+pcaq:shipsFromLocation a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "ships from location" ;
+    rdfs:domain pcaq:ShipmentLane ; rdfs:range pcaq:Location ;
+    rdfs:comment "REQUIRED on every shipment lane (supplier + interco). UnresolvedLocation OK." .
+pcaq:locationCountry a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "country" ;
+    rdfs:domain pcaq:Location ; rdfs:range xsd:string ;
+    rdfs:comment "ISO-ish country name or code (e.g. China, CN, United States)." .
+pcaq:locationRegion a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "region / state" ;
+    rdfs:domain pcaq:Location ; rdfs:range xsd:string .
+pcaq:locationCity a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "city" ;
+    rdfs:domain pcaq:Location ; rdfs:range xsd:string .
+pcaq:latitude a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:domain pcaq:Location ; rdfs:range xsd:decimal .
+pcaq:longitude a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:domain pcaq:Location ; rdfs:range xsd:decimal .
+pcaq:hasHazardTag a owl:ObjectProperty ; rdfs:label "has hazard tag" ;
+    rdfs:domain pcaq:Location ; rdfs:range pcaq:HazardTag .
+pcaq:hazardSeverity a owl:DatatypeProperty ; rdfs:label "hazard severity (1-5)" ;
+    rdfs:domain pcaq:Location ; rdfs:range xsd:integer ;
+    rdfs:comment "Optional overall severity score for the location (1=low .. 5=critical)." .
+pcaq:locationOfPlant a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "location of plant" ;
+    rdfs:domain pcaq:Plant ; rdfs:range pcaq:Location .
+
+# --- Sourcing restrictions ("do not source from") — separate from quote graphs (v0.4) ---
+# Restriction table is maintained independently and joined at query time against lane ship-from locations.
+
+pcaq:SourcingRestriction a owl:Class ; rdfs:label "sourcing restriction" ;
+    rdfs:comment "Do-not-source rule: applies to a country, region, or Location; effective-from/to; reason; owner. Kept as separate data so it can be updated and re-run against all quotes." .
+pcaq:RestrictionReason a owl:Class ; rdfs:label "restriction reason / type" .
+pcaq:SanctionsRestriction a pcaq:RestrictionReason ; rdfs:label "sanctions" .
+pcaq:TariffRestriction a pcaq:RestrictionReason ; rdfs:label "tariff / trade" .
+pcaq:PolicyRestriction a pcaq:RestrictionReason ; rdfs:label "company policy" .
+pcaq:QualityRestriction a pcaq:RestrictionReason ; rdfs:label "quality / audit hold" .
+pcaq:ConflictMineralsRestriction a pcaq:RestrictionReason ; rdfs:label "conflict minerals" .
+
+pcaq:restrictsCountry a owl:DatatypeProperty ; rdfs:label "restricts country" ;
+    rdfs:domain pcaq:SourcingRestriction ; rdfs:range xsd:string .
+pcaq:restrictsRegion a owl:DatatypeProperty ; rdfs:label "restricts region" ;
+    rdfs:domain pcaq:SourcingRestriction ; rdfs:range xsd:string ;
+    rdfs:comment "Matches Location.locationRegion (and optionally country for disambiguation)." .
+pcaq:restrictsLocation a owl:ObjectProperty ; rdfs:label "restricts location" ;
+    rdfs:domain pcaq:SourcingRestriction ; rdfs:range pcaq:Location .
+pcaq:restrictionReason a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:label "restriction reason" ;
+    rdfs:domain pcaq:SourcingRestriction ; rdfs:range pcaq:RestrictionReason .
+pcaq:restrictionEffectiveFrom a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "effective from" ;
+    rdfs:domain pcaq:SourcingRestriction ; rdfs:range xsd:date .
+pcaq:restrictionEffectiveTo a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "effective to" ;
+    rdfs:domain pcaq:SourcingRestriction ; rdfs:range xsd:date ;
+    rdfs:comment "Optional end date; omit for open-ended." .
+pcaq:restrictionSource a owl:DatatypeProperty ; rdfs:label "restriction source / owner" ;
+    rdfs:domain pcaq:SourcingRestriction ; rdfs:range xsd:string .
+pcaq:restrictionSeverity a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "restriction severity (1-5)" ;
+    rdfs:domain pcaq:SourcingRestriction ; rdfs:range xsd:integer .
+pcaq:restrictionActive a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:label "restriction marked active" ;
+    rdfs:domain pcaq:SourcingRestriction ; rdfs:range xsd:boolean .

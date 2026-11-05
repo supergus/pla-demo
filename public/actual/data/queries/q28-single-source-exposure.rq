@@ -1,0 +1,27 @@
+# Q28: Single-source exposure by location (parts that ship from exactly one location across their lanes)
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?loc ?city ?country ?hazardLabels (COUNT(DISTINCT ?line) AS ?partCount)
+       (SUM(?vol) AS ?annualVolume) (SUM(?itv) AS ?ownedInTransitValue)
+WHERE {
+  {
+    SELECT ?line (COUNT(DISTINCT ?loc0) AS ?nLoc)
+    WHERE {
+      ?line a pcaq:PartLine ; pcaq:hasShipmentLane ?lane0 .
+      ?lane0 pcaq:shipsFromLocation ?loc0 .
+    }
+    GROUP BY ?line
+    HAVING (COUNT(DISTINCT ?loc0) = 1)
+  }
+  ?line pcaq:hasShipmentLane ?lane ; pcaq:averageAnnualVolume ?vol .
+  ?lane pcaq:shipsFromLocation ?loc .
+  OPTIONAL { ?lane pcaq:ownedInTransitValue ?itv }
+  ?loc pcaq:locationCity ?city ; pcaq:locationCountry ?country .
+  OPTIONAL {
+    SELECT ?loc (GROUP_CONCAT(DISTINCT ?hl ; separator=", ") AS ?hazardLabels)
+    WHERE { ?loc pcaq:hasHazardTag/rdfs:label ?hl }
+    GROUP BY ?loc
+  }
+}
+GROUP BY ?loc ?city ?country ?hazardLabels
+ORDER BY DESC(?ownedInTransitValue)

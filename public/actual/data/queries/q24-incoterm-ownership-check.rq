@@ -1,0 +1,14 @@
+# Q24: Incoterm default ownership vs lane ownershipTransferPoint (flag contract overrides)
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?lane ?incoterm ?defaultPoint ?lanePoint ?override ?match
+WHERE {
+  ?lane a pcaq:SupplierShipmentLane ;
+        pcaq:hasIncoterm ?inc ;
+        pcaq:ownershipTransferPoint ?lanePt .
+  ?inc rdfs:label ?incoterm ; pcaq:defaultOwnershipFromIncoterm ?def .
+  ?def rdfs:label ?defaultPoint . ?lanePt rdfs:label ?lanePoint .
+  OPTIONAL { ?lane pcaq:ownershipOverride ?override }
+  BIND(?def = ?lanePt AS ?match)
+}
+ORDER BY ?lane

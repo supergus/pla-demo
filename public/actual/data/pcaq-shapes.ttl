@@ -70,3 +70,52 @@ shp:ApprovedLoopShape a sh:NodeShape ;
       sh:maxCount 1 ;
       sh:message "approvedLoop must be a boolean if present"
     ] .
+
+# --- Inventory planning lanes (v0.4) ---
+shp:ShipmentLaneShape a sh:NodeShape ;
+    sh:targetClass pcaq:ShipmentLane ;
+    sh:property
+      [ sh:path pcaq:laneFrom ; sh:class pcaq:Party ; sh:minCount 1 ; sh:maxCount 1 ; sh:message "LANE needs from party" ] ,
+      [ sh:path pcaq:laneTo ; sh:class pcaq:Party ; sh:minCount 1 ; sh:maxCount 1 ; sh:message "LANE needs to party" ] ,
+      [ sh:path pcaq:hasTransportMode ; sh:class pcaq:TransportMode ; sh:minCount 1 ; sh:message "LANE needs transport mode" ] ,
+      [ sh:path pcaq:totalTransitDays ; sh:datatype xsd:decimal ; sh:minCount 1 ; sh:message "LANE needs total transit days" ] ,
+      [ sh:path pcaq:ownershipTransferPoint ; sh:class pcaq:TransferPoint ; sh:minCount 1 ; sh:message "LANE needs ownership transfer point" ] .
+
+shp:SupplierLaneShape a sh:NodeShape ;
+    sh:targetClass pcaq:SupplierShipmentLane ;
+    sh:property
+      [ sh:path pcaq:hasIncoterm ; sh:class pcaq:Incoterm ; sh:minCount 1 ; sh:message "SUPPLIER LANE needs Incoterm" ] ,
+      [ sh:path pcaq:incotermPlace ; sh:class pcaq:NamedPlace ; sh:minCount 1 ; sh:message "SUPPLIER LANE needs Incoterm named place" ] .
+
+shp:IntercoLaneShape a sh:NodeShape ;
+    sh:targetClass pcaq:IntercompanyShipmentLane ;
+    sh:property
+      [ sh:path pcaq:ownershipTransferPoint ; sh:minCount 1 ; sh:message "INTERCO LANE must store ownership point explicitly" ] ,
+      [ sh:path pcaq:forIntercompanyTransfer ; sh:class pcaq:IntercompanyTransfer ; sh:minCount 1 ; sh:message "INTERCO LANE should link an IntercompanyTransfer" ] .
+
+# --- Supply-chain risk: ship-from location required on every lane ---
+shp:LaneShipFromShape a sh:NodeShape ;
+    sh:targetClass pcaq:ShipmentLane ;
+    sh:property
+      [ sh:path pcaq:shipsFromLocation ; sh:class pcaq:Location ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "LANE needs ship-from Location (UnresolvedLocation OK)" ] .
+
+shp:LocationShape a sh:NodeShape ;
+    sh:targetClass pcaq:Location ;
+    sh:property
+      [ sh:path pcaq:locationCountry ; sh:datatype xsd:string ; sh:minCount 1 ; sh:message "LOCATION needs country" ] ,
+      [ sh:path pcaq:locationCity ; sh:datatype xsd:string ; sh:minCount 1 ; sh:message "LOCATION needs city" ] .
+
+
+# --- SourcingRestriction (restriction table; separate from quotes) ---
+shp:SourcingRestrictionShape a sh:NodeShape ;
+    sh:targetClass pcaq:SourcingRestriction ;
+    sh:property
+      [ sh:path pcaq:restrictionReason ; sh:class pcaq:RestrictionReason ; sh:minCount 1 ; sh:message "RESTRICTION needs reason" ] ,
+      [ sh:path pcaq:restrictionEffectiveFrom ; sh:datatype xsd:date ; sh:minCount 1 ; sh:message "RESTRICTION needs effective-from" ] ,
+      [ sh:path pcaq:restrictionSeverity ; sh:datatype xsd:integer ; sh:minCount 1 ; sh:message "RESTRICTION needs severity" ] ;
+    sh:or (
+      [ sh:property [ sh:path pcaq:restrictsCountry ; sh:minCount 1 ] ]
+      [ sh:property [ sh:path pcaq:restrictsRegion ; sh:minCount 1 ] ]
+      [ sh:property [ sh:path pcaq:restrictsLocation ; sh:minCount 1 ] ]
+    ) .

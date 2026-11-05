@@ -1,0 +1,10 @@
+# Q21: Owned in-transit $ rolled up by receiving plant
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?plant ?plantLabel (SUM(?val) AS ?ownedInTransitValue) (SUM(?qty) AS ?ownedInTransitQty)
+WHERE {
+  ?lane pcaq:laneTo ?plant ; pcaq:ownedInTransitValue ?val ; pcaq:ownedInTransitQty ?qty .
+  ?plant rdfs:label ?plantLabel .
+}
+GROUP BY ?plant ?plantLabel
+ORDER BY DESC(?ownedInTransitValue)

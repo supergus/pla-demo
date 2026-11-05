@@ -1,0 +1,10 @@
+# Q23: Workbook total owned in-transit inventory $ and qty
+PREFIX pcaq: <http://pcaq.local/ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?workbook ?wbLabel (SUM(?qty) AS ?totalOwnedInTransitQty) (SUM(?val) AS ?totalOwnedInTransitValue)
+WHERE {
+  ?line pcaq:inWorkbook ?workbook ; pcaq:hasShipmentLane ?lane .
+  ?workbook rdfs:label ?wbLabel .
+  ?lane pcaq:ownedInTransitQty ?qty ; pcaq:ownedInTransitValue ?val .
+}
+GROUP BY ?workbook ?wbLabel
