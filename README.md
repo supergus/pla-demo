@@ -2,8 +2,11 @@
 
 A live management console for one **Program Lifecycle Agent (PLA)** run on a sample RFQ, built on the
 tutorial OWL ontology in [supergus/pla-agents/ontology](https://github.com/supergus/pla-agents/tree/main/ontology).
-Static site, no backend, no secrets, no API keys. Site files live in [`public/`](public/) (Cloudflare Pages output dir).
-All libraries are vendored in `public/vendor/` (no CDN at runtime).
+Site files live in [`public/`](public/) (Cloudflare Pages output dir; Pages project name still `rfq-demo`).
+The scripted console runs in the browser with vendored libraries (`public/vendor/`, no CDN). The three AI tools
+optionally call Worker **`rfq-pla`** (Workflow `rfq-pla-run`, Workers AI Llama 3.3 70B, **$20/day** hard cap) through
+the Pages `PLA` service binding after the **"Secret?"** gate; when the Worker is resting or unavailable the console
+falls back to canned output. No customer data — sample RFQs only.
 
 ## What it shows
 "Upload RFQ package" (nothing is uploaded) starts a scripted PLA run on sample RFQ-1002:
@@ -33,21 +36,18 @@ persistent: 4 attempts, then "Retry failed step"); run state in localStorage so 
 100 / 1,000 / 10,000), so numbers match the repo's worked example: unit 60.86 / 58.01 / 57.72, totals 8,016.00 / 60,660.00 / 587,050.00 (DAP).
 The repo data file for RFQ-1002 has a single 500 break.
 
-## PCAQ ontology viewer at `/actual/`
-`public/actual/` is the static build of the private repo **supergus/pcaq-viewer** (thin structural OWL of the PCAQ quote
-workbook + fictional demo data; no workbooks, prices, customers or CER numbers). It is served at
-https://pla.chriscouch.net/actual/ behind the same "Secret?" gate as the rest of the site (root `functions/_middleware.js`
-covers every path; `tests/actual-gated.test.mjs` checks it). The landing page links to it.
+## Quote demo at `/actual/`
+`public/actual/` is a **frozen** static quote-demo build (fictional demo data only; no real workbooks, prices,
+customers or CER numbers). It is served at https://pla.chriscouch.net/actual/ behind the same "Secret?" gate
+(root `functions/_middleware.js`; `tests/actual-gated.test.mjs` checks it). The landing page links to it.
+`SOURCE.txt` records the historical pin from archived `supergus/pcaq-viewer`. Do not re-run
+`tools/sync-actual.sh` without an explicit go-ahead — that repo is archived, and Graph View now lives in Leaf Tender.
 
 ## Leaf Tender (separate product)
-Leaf Tender is a separate ontology management project hosted at **https://leaftender.chriscouch.net**
-(own Worker + D1 + suite login — not this site's Secret? gate).
+Leaf Tender is a separate ontology management project hosted at **https://leaftender.chriscouch.net**.
 `/leaf-tender/` on this site **302-redirects** there (prefix stripped, query kept). There is no
 `LEAF_TENDER` service binding and no proxy: old links keep working via redirect only.
-The landing page links out to Leaf Tender (Graph View / login); those pills live in `public/index.html`.
-
-`/actual/` stays here for the quote demo. Do not edit `public/actual/` by hand; refresh it with
-`tools/sync-actual.sh /path/to/pcaq-viewer` (records the source commit in `public/actual/SOURCE.txt`).
+The landing page pills in `public/index.html` link out to Leaf Tender.
 
 ## Data and vendored libraries
 - `public/data/`: copied from the ontology tree (`ontology/` in supergus/pla-agents; content identical to former rfq-ontology `ff69572`) (ontology/*.ttl, data/*.ttl, shapes, queries/*.rq) plus
@@ -72,3 +72,5 @@ python tools/e2e.py http://127.0.0.1:8000/ shots               # headless end-to
 
 ## Process
 `main` is protected: changes go through a PR and need the "Grok Bot QC" status.
+Merges that touch `worker/**` or `functions/**` also run `.github/workflows/deploy-worker.yml` (Worker `rfq-pla`).
+See [`worker/README.md`](worker/README.md) for the API, budget cap, and bindings.
