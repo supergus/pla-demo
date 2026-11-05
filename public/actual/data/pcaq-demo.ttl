@@ -39,7 +39,7 @@ ex:CER-DEMO-0001 a pcaq:CostEstimateRequest ; rdfs:label "CER DEMO-0001 (fiction
 ex:Init-LineSpeed a pcaq:CostImpactInitiative ; rdfs:label "Line speed improvement (fictional)" .
 
 ex:Part-P-001 a pcaq:Part ; rdfs:label "Demo hose assembly" ; pcaq:partNumber "P-001" .
-ex:Line-P-001 a pcaq:PartLine ; rdfs:label "Line 1: Demo hose assembly" ; pcaq:inWorkbook ex:WB-Falcon-v1 ; pcaq:forPart ex:Part-P-001 ;
+ex:Line-P-001 a pcaq:QuotedPart ; rdfs:label "Line 1: Demo hose assembly" ; pcaq:inWorkbook ex:WB-Falcon-v1 ; pcaq:forPart ex:Part-P-001 ;
     pcaq:inProductType ex:PT-Hoses ; pcaq:madeAtPlant ex:PlantNorth ; pcaq:rfqNumber "RFQ-DEMO-001" ;
     pcaq:averageAnnualVolume 120000 ; pcaq:rosTarget 0.08 ; pcaq:costEntryMode pcaq:ViaCostingSummary ; pcaq:purchasedCarveOut 1.50 ;
     pcaq:hasCostBreakdown ex:CB-P-001 ; pcaq:hasBasePrice ex:Base-P-001 ; pcaq:hasLTASchedule ex:LTA-P-001 ;
@@ -71,7 +71,7 @@ ex:YV-P-001-Y2 a pcaq:YearVolume ; rdfs:label "P-001 vol Y2" ; pcaq:yearIndex 2 
 ex:YV-P-001-Y3 a pcaq:YearVolume ; rdfs:label "P-001 vol Y3" ; pcaq:yearIndex 3 ; pcaq:volume 122400 .
 
 ex:Part-P-002 a pcaq:Part ; rdfs:label "Demo bracket" ; pcaq:partNumber "P-002" .
-ex:Line-P-002 a pcaq:PartLine ; rdfs:label "Line 2: Demo bracket" ; pcaq:inWorkbook ex:WB-Falcon-v1 ; pcaq:forPart ex:Part-P-002 ;
+ex:Line-P-002 a pcaq:QuotedPart ; rdfs:label "Line 2: Demo bracket" ; pcaq:inWorkbook ex:WB-Falcon-v1 ; pcaq:forPart ex:Part-P-002 ;
     pcaq:inProductType ex:PT-Hoses ; pcaq:madeAtPlant ex:PlantNorth ; pcaq:rfqNumber "RFQ-DEMO-002" ;
     pcaq:averageAnnualVolume 80000 ; pcaq:rosTarget 0.10 ; pcaq:costEntryMode pcaq:ViaCostingSummary ; pcaq:purchasedCarveOut 0.00 ;
     pcaq:hasCostBreakdown ex:CB-P-002 ; pcaq:hasBasePrice ex:Base-P-002 ; pcaq:hasLTASchedule ex:LTA-P-002 ;
@@ -103,7 +103,7 @@ ex:YV-P-002-Y2 a pcaq:YearVolume ; rdfs:label "P-002 vol Y2" ; pcaq:yearIndex 2 
 ex:YV-P-002-Y3 a pcaq:YearVolume ; rdfs:label "P-002 vol Y3" ; pcaq:yearIndex 3 ; pcaq:volume 81600 .
 
 ex:Part-P-003 a pcaq:Part ; rdfs:label "Demo quick connector" ; pcaq:partNumber "P-003" .
-ex:Line-P-003 a pcaq:PartLine ; rdfs:label "Line 3: Demo quick connector" ; pcaq:inWorkbook ex:WB-Falcon-v1 ; pcaq:forPart ex:Part-P-003 ;
+ex:Line-P-003 a pcaq:QuotedPart ; rdfs:label "Line 3: Demo quick connector" ; pcaq:inWorkbook ex:WB-Falcon-v1 ; pcaq:forPart ex:Part-P-003 ;
     pcaq:inProductType ex:PT-Connectors ; pcaq:madeAtPlant ex:PlantSouth ; pcaq:rfqNumber "RFQ-DEMO-003" ;
     pcaq:averageAnnualVolume 200000 ; pcaq:rosTarget 0.07 ; pcaq:costEntryMode pcaq:HandTypedArithmetic ; pcaq:purchasedCarveOut 0.90 ;
     pcaq:hasCostBreakdown ex:CB-P-003 ; pcaq:hasBasePrice ex:Base-P-003 ; pcaq:hasLTASchedule ex:LTA-P-003 ;
@@ -134,7 +134,7 @@ ex:YV-P-003-Y2 a pcaq:YearVolume ; rdfs:label "P-003 vol Y2" ; pcaq:yearIndex 2 
 ex:YV-P-003-Y3 a pcaq:YearVolume ; rdfs:label "P-003 vol Y3" ; pcaq:yearIndex 3 ; pcaq:volume 204000 .
 
 ex:Part-P-004 a pcaq:Part ; rdfs:label "Demo clip set" ; pcaq:partNumber "P-004" .
-ex:Line-P-004 a pcaq:PartLine ; rdfs:label "Line 4: Demo clip set" ; pcaq:inWorkbook ex:WB-Falcon-v1 ; pcaq:forPart ex:Part-P-004 ;
+ex:Line-P-004 a pcaq:QuotedPart ; rdfs:label "Line 4: Demo clip set" ; pcaq:inWorkbook ex:WB-Falcon-v1 ; pcaq:forPart ex:Part-P-004 ;
     pcaq:inProductType ex:PT-Connectors ; pcaq:madeAtPlant ex:PlantSouth ; pcaq:rfqNumber "RFQ-DEMO-004" ;
     pcaq:averageAnnualVolume 350000 ; pcaq:rosTarget 0.09 ; pcaq:costEntryMode pcaq:StaticValues ; pcaq:purchasedCarveOut 0.00 ;
     pcaq:hasCostBreakdown ex:CB-P-004 ; pcaq:hasBasePrice ex:Base-P-004 ; pcaq:hasLTASchedule ex:LTA-P-004 ;
@@ -163,7 +163,7 @@ ex:YV-P-004-Y2 a pcaq:YearVolume ; rdfs:label "P-004 vol Y2" ; pcaq:yearIndex 2 
 ex:YV-P-004-Y3 a pcaq:YearVolume ; rdfs:label "P-004 vol Y3" ; pcaq:yearIndex 3 ; pcaq:volume 357000 .
 
 ex:Part-P-005 a pcaq:Part ; rdfs:label "Demo grommet (draft)" ; pcaq:partNumber "P-005" .
-ex:Line-P-005 a pcaq:PartLine ; rdfs:label "Line 5: Demo grommet (DRAFT, incomplete on purpose)" ;
+ex:Line-P-005 a pcaq:QuotedPart ; rdfs:label "Line 5: Demo grommet (DRAFT, incomplete on purpose)" ;
     pcaq:inWorkbook ex:WB-Falcon-v1 ; pcaq:forPart ex:Part-P-005 ; pcaq:inProductType ex:PT-Connectors ;
     pcaq:rfqNumber "RFQ-DEMO-005" ; pcaq:costEntryMode pcaq:ViaCostingSummary .
 

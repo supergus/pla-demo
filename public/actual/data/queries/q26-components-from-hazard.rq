@@ -4,7 +4,7 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 SELECT ?line ?lineLabel ?lane ?laneLabel ?loc ?city ?country ?hazard ?severity ?vol ?inTransitValue
 WHERE {
   BIND(pcaq:EarthquakeRisk AS ?hazardFilter)
-  ?line a pcaq:PartLine ; rdfs:label ?lineLabel ; pcaq:hasShipmentLane ?lane ;
+  ?line a pcaq:QuotedPart ; rdfs:label ?lineLabel ; pcaq:hasShipmentLane ?lane ;
         pcaq:averageAnnualVolume ?vol .
   ?lane rdfs:label ?laneLabel ; pcaq:shipsFromLocation ?loc .
   ?loc pcaq:hasHazardTag ?hazard ; pcaq:locationCity ?city ; pcaq:locationCountry ?country .

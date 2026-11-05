@@ -1,4 +1,4 @@
-# Q2: Cost breakdown elements per part line (with Costing_Summary column lineage)
+# Q2: Cost breakdown elements per quoted part (with Costing_Summary column lineage)
 PREFIX pcaq: <http://pcaq.local/ns#>
 PREFIX ex:   <http://pcaq.local/demo#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>

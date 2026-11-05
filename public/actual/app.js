@@ -88,7 +88,7 @@ const GRAPH_STYLE = {
   // groups: color + shape drive both vis nodes and the left-pane legend
   groups: {
     class:      { color: "#6e7fd6", shape: "ellipse", legend: "OWL class" },
-    PartLine:   { color: "#4da3ff", shape: "box",     legend: "Part line" },
+    QuotedPart:   { color: "#4da3ff", shape: "box",     legend: "Quoted part" },
     CostElement:{ color: "#3fb27f", shape: "box",     legend: "Cost element / breakdown" },
     SellingPrice:{ color: "#f08b5a", shape: "box",    legend: "Selling price" },
     LTA:        { color: "#e0a63a", shape: "box",     legend: "LTA schedule / step" },
@@ -107,7 +107,7 @@ const COLORS = Object.fromEntries(Object.entries(GRAPH_STYLE.groups).map(([k, v]
 function groupOf(iri) {
   if (select(`ASK { <${iri}> a owl:Class }`).ask) return "class";
   const t = (c) => select(`ASK { <${iri}> a/rdfs:subClassOf* ${c} }`).ask;
-  if (t("pcaq:PartLine")) return "PartLine"; if (t("pcaq:CostElement") || t("pcaq:CostBreakdown")) return "CostElement";
+  if (t("pcaq:QuotedPart")) return "QuotedPart"; if (t("pcaq:CostElement") || t("pcaq:CostBreakdown")) return "CostElement";
   if (t("pcaq:SellingPrice")) return "SellingPrice"; if (t("pcaq:LTASchedule") || t("pcaq:LTAStep")) return "LTA";
   if (t("pcaq:IntercompanyTransfer") || t("pcaq:IntercompanySubcomponent") || t("pcaq:UnresolvedPlant")) return "Interco";
   if (t("pcaq:MarginView") || t("pcaq:FinishedGoodsMargin") || t("pcaq:IntercompanyMargin") || t("pcaq:TotalCompanyMargin")) return "Margin";
@@ -162,11 +162,11 @@ function schemaGraph() {
   for (const r of select(`SELECT ?p ?d ?r WHERE { ?p a owl:ObjectProperty ; rdfs:domain ?d ; rdfs:range ?r FILTER(STRSTARTS(STR(?r), "${PFX.pcaq}")) }`).rows) { addNode(r.d.value); addNode(r.r.value); addEdge(r.d.value, r.p.value, r.r.value); }
   net.fit();
 }
-function spineGraph() {
+function quoteDetailGraph() {
   ensureNet(); nodes.clear(); edges.clear();
   // Prefer a line that has an IC transfer tree so the supply-chain edges show up
-  const line = select(`SELECT ?l WHERE { ?l a pcaq:PartLine ; pcaq:hasIntercompanyTransfer ?t } ORDER BY ?l LIMIT 1`).rows[0]?.l.value
-    || select(`SELECT ?l WHERE { ?l a pcaq:PartLine ; pcaq:hasEstimate ?e } ORDER BY ?l LIMIT 1`).rows[0]?.l.value;
+  const line = select(`SELECT ?l WHERE { ?l a pcaq:QuotedPart ; pcaq:hasIntercompanyTransfer ?t } ORDER BY ?l LIMIT 1`).rows[0]?.l.value
+    || select(`SELECT ?l WHERE { ?l a pcaq:QuotedPart ; pcaq:hasEstimate ?e } ORDER BY ?l LIMIT 1`).rows[0]?.l.value;
   if (!line) return;
   expand(line);
   for (const p of ["hasCostBreakdown", "hasLTASchedule", "hasEstimate", "inWorkbook", "hasFinishedGoodsMargin", "hasIntercompanyMargin", "hasTotalCompanyMargin"]) {
@@ -243,7 +243,7 @@ document.querySelectorAll(".tabs button").forEach((b) => (b.onclick = () => tab(
 $("mode-class").onclick = () => { treeMode = "class"; $("mode-class").classList.add("on"); $("mode-inst").classList.remove("on"); renderTree(); };
 $("mode-inst").onclick = () => { treeMode = "inst"; $("mode-inst").classList.add("on"); $("mode-class").classList.remove("on"); renderTree(); };
 $("filter").oninput = renderTree;
-$("g-schema").onclick = schemaGraph; $("g-spine").onclick = spineGraph; $("g-clear").onclick = () => { ensureNet(); nodes.clear(); edges.clear(); };
+$("g-schema").onclick = schemaGraph; $("g-quote-detail").onclick = quoteDetailGraph; $("g-clear").onclick = () => { ensureNet(); nodes.clear(); edges.clear(); };
 $("q-run").onclick = runQuery; $("q-csv").onclick = csv;
 $("q-text").onkeydown = (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); runQuery(); } };
 $("q-pick").onchange = () => { $("q-text").value = queries[+$("q-pick").value].text; runQuery(); };
@@ -260,6 +260,6 @@ $("file").onchange = async (e) => { for (const f of e.target.files) extra.push({
     queries = await Promise.all(names.map(async (n) => { const t = await fetchText("queries/" + n); return { n, text: t, title: t.split("\n")[0].replace(/^#\s*/, "") }; }));
     $("q-pick").innerHTML = queries.map((q, i) => `<option value="${i}">${esc(q.title)}</option>`).join("");
     $("q-text").value = queries[0]?.text || "";
-    buildStore(); renderLegend(); initRightPane(); spineGraph();
+    buildStore(); renderLegend(); initRightPane(); quoteDetailGraph();
   } catch (e) { $("stats").innerHTML = `<span class="err">Load failed: ${esc(e.message)}. Serve this folder over http (./serve.sh), not file://</span>`; }
 })();

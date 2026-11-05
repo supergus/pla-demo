@@ -1,9 +1,0 @@
-# Q12: Part lines missing a cost breakdown, base price or yearly prices
-PREFIX pcaq: <http://pcaq.local/ns#>
-PREFIX ex:   <http://pcaq.local/demo#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX owl:  <http://www.w3.org/2002/07/owl#>
-SELECT ?line ?label WHERE {
-  ?line a pcaq:PartLine . OPTIONAL { ?line rdfs:label ?label }
-  FILTER(NOT EXISTS { ?line pcaq:hasCostBreakdown ?x } || NOT EXISTS { ?line pcaq:hasBasePrice ?y } || NOT EXISTS { ?line pcaq:hasYearPrice ?z })
-}

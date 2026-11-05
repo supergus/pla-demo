@@ -1,11 +1,11 @@
-# SHACL completeness shapes for PCAQ part lines (draft, private)
+# SHACL completeness shapes for PCAQ quoted parts (draft, private)
 @prefix sh:   <http://www.w3.org/ns/shacl#> .
 @prefix pcaq: <http://pcaq.local/ns#> .
 @prefix shp:  <http://pcaq.local/shapes#> .
 @prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
 
-shp:PartLineShape a sh:NodeShape ;
-    sh:targetClass pcaq:PartLine ;
+shp:QuotedPartShape a sh:NodeShape ;
+    sh:targetClass pcaq:QuotedPart ;
     sh:property
       [ sh:path pcaq:forPart ; sh:minCount 1 ; sh:maxCount 1 ; sh:message "PART LINE has no part" ] ,
       [ sh:path pcaq:madeAtPlant ; sh:class pcaq:Plant ; sh:minCount 1 ; sh:message "PART LINE has no plant" ] ,
@@ -16,7 +16,7 @@ shp:PartLineShape a sh:NodeShape ;
       [ sh:path pcaq:hasYearPrice ; sh:class pcaq:YearPrice ; sh:minCount 1 ; sh:message "PART LINE has no yearly selling prices" ] .
 
 shp:CostingSummaryLineShape a sh:NodeShape ;
-    sh:targetClass pcaq:PartLine ;
+    sh:targetClass pcaq:QuotedPart ;
     sh:message "PART LINE entered via Costing_Summary but has no imported estimate" ;
     sh:or ( [ sh:not [ sh:property [ sh:path pcaq:costEntryMode ; sh:hasValue pcaq:ViaCostingSummary ] ] ]
             [ sh:property [ sh:path pcaq:hasEstimate ; sh:minCount 1 ] ] ) .
@@ -44,7 +44,7 @@ shp:IntercompanyTransferShape a sh:NodeShape ;
         sh:message "TRANSFER needs producing plant (use UnresolvedPlant placeholder if unknown)" ] ,
       [ sh:path pcaq:receivingPlant ; sh:class pcaq:Plant ; sh:minCount 1 ; sh:maxCount 1 ;
         sh:message "TRANSFER needs receiving plant (use UnresolvedPlant placeholder if unknown)" ] ,
-      [ sh:path pcaq:intoFinishedGood ; sh:class pcaq:PartLine ; sh:minCount 1 ; sh:maxCount 1 ;
+      [ sh:path pcaq:intoFinishedGood ; sh:class pcaq:QuotedPart ; sh:minCount 1 ; sh:maxCount 1 ;
         sh:message "TRANSFER not linked to a finished-good line" ] ,
       [ sh:path pcaq:intercompanyMarginAmount ; sh:datatype xsd:decimal ; sh:minCount 1 ;
         sh:message "TRANSFER missing IC margin per piece (AK)" ] .

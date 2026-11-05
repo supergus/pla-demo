@@ -1,10 +1,10 @@
-# Q1: Base price (N) and yearly selling prices Y1..Y3 per part line
+# Q1: Base price (N) and yearly selling prices Y1..Y3 per quoted part
 PREFIX pcaq: <http://pcaq.local/ns#>
 PREFIX ex:   <http://pcaq.local/demo#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX owl:  <http://www.w3.org/2002/07/owl#>
 SELECT ?line ?base ?y1 ?y2 ?y3 WHERE {
-  ?line a pcaq:PartLine ; pcaq:hasBasePrice/pcaq:amount ?base .
+  ?line a pcaq:QuotedPart ; pcaq:hasBasePrice/pcaq:amount ?base .
   OPTIONAL { ?line pcaq:hasYearPrice ?p1 . ?p1 pcaq:yearIndex 1 ; pcaq:amount ?y1 }
   OPTIONAL { ?line pcaq:hasYearPrice ?p2 . ?p2 pcaq:yearIndex 2 ; pcaq:amount ?y2 }
   OPTIONAL { ?line pcaq:hasYearPrice ?p3 . ?p3 pcaq:yearIndex 3 ; pcaq:amount ?y3 }
