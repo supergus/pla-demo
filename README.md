@@ -50,7 +50,7 @@ The landing page links out to Leaf Tender (Graph View / login); those pills live
 `tools/sync-actual.sh /path/to/pcaq-viewer` (records the source commit in `public/actual/SOURCE.txt`).
 
 ## Data and vendored libraries
-- `public/data/`: copied from rfq-ontology `ff69572` (ontology/*.ttl, data/*.ttl, shapes, queries/*.rq) plus
+- `public/data/`: copied from the ontology tree (`ontology/` in supergus/pla-agents; content identical to former rfq-ontology `ff69572`) (ontology/*.ttl, data/*.ttl, shapes, queries/*.rq) plus
   `quote-results.ttl` (`scripts/quote.py --ttl`), `shacl-results.json` and `reasoner-results.json` (build-time replays).
 - `public/vendor/`: `rdf-shacl.js` (N3.js + rdf-ext + shacl-engine, bundled with esbuild), `oxigraph/` (web.js + wasm),
   `vis-network.min.js`. Versions in `public/vendor/VERSIONS.txt`; rebuild with `cd tools/vendor && npm ci && ./build.sh`.
@@ -59,8 +59,8 @@ The landing page links out to Leaf Tender (Graph View / login); those pills live
 ```
 cd public && python3 -m http.server 8000                       # serve locally
 node tools/test-cost.mjs                                       # cost calculator matches the repo
-python tools/precompute.py ../rfq-ontology                     # regenerate replayed SHACL results (rdflib, pyshacl)
-ROBOT_JAR=robot.jar python tools/precompute_reasoner.py ../rfq-ontology   # regenerate replayed HermiT result (Java)
+python tools/precompute.py ../pla-agents/ontology                     # regenerate replayed SHACL results (rdflib, pyshacl)
+ROBOT_JAR=robot.jar python tools/precompute_reasoner.py ../pla-agents/ontology   # regenerate replayed HermiT result (Java)
 python tools/e2e.py http://127.0.0.1:8000/ shots               # headless end-to-end test (playwright)
 ```
 

@@ -1,10 +1,10 @@
 """Build-time: classify RFQ-1002 with HermiT (via ROBOT) before and after the human fix (Incoterm DAP + A36 spec);
 write public/data/reasoner-results.json. The browser replays this result next to its own live SPARQL check.
-Usage: ROBOT_JAR=/path/robot.jar python tools/precompute_reasoner.py ../rfq-ontology   (needs Java 11+, rdflib)"""
+Usage: ROBOT_JAR=/path/robot.jar python tools/precompute_reasoner.py ../pla-agents/ontology   (needs Java 11+, rdflib)"""
 import datetime, json, os, subprocess, sys, tempfile
 from pathlib import Path
 from rdflib import RDF, Graph, URIRef
-repo = Path(sys.argv[1] if len(sys.argv) > 1 else "../rfq-ontology").resolve()
+repo = Path(sys.argv[1] if len(sys.argv) > 1 else "../pla-agents/ontology").resolve()
 jar = os.environ.get("ROBOT_JAR", "robot.jar")
 fix = json.loads(Path("public/data/shacl-results.json").read_text())["fixTurtle"]
 fix += ("@prefix owl: <http://www.w3.org/2002/07/owl#> .\n<https://supergus.github.io/rfq-ontology/data/rfq-1002-fix> a owl:Ontology ;"

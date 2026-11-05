@@ -1,10 +1,10 @@
 """Build-time: run pySHACL on RFQ-1002 before and after the human fixes; write data/shacl-results.json.
-Usage: python tools/precompute.py ../rfq-ontology"""
+Usage: python tools/precompute.py ../pla-agents/ontology"""
 import json, sys, glob, datetime
 from pathlib import Path
 from rdflib import Graph
 from pyshacl import validate
-repo = Path(sys.argv[1] if len(sys.argv) > 1 else "../rfq-ontology")
+repo = Path(sys.argv[1] if len(sys.argv) > 1 else "../pla-agents/ontology")
 FIX = """@prefix rfq: <https://supergus.github.io/rfq-ontology/ns#> .
 @prefix ex: <https://supergus.github.io/rfq-ontology/data#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
