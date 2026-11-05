@@ -40,13 +40,14 @@ https://pla.chriscouch.net/actual/ behind the same "Secret?" gate as the rest of
 covers every path; `tests/actual-gated.test.mjs` checks it). The landing page links to it.
 
 ## Leaf Tender (separate product)
-Ontology management suite lives at **https://leaftender.chriscouch.net** (own Worker + D1 + suite login).
-`/leaf-tender/` on this site **302-redirects** there (no Secret? required; no `LEAF_TENDER` service binding).
-The landing-page "Leaf Tender" pill links directly to the new host.
+Leaf Tender is a separate ontology management project hosted at **https://leaftender.chriscouch.net**
+(own Worker + D1 + suite login — not this site's Secret? gate).
+`/leaf-tender/` on this site **302-redirects** there (prefix stripped, query kept). There is no
+`LEAF_TENDER` service binding and no proxy: old links keep working via redirect only.
+The landing page links out to Leaf Tender (Graph View / login); those pills live in `public/index.html`.
 
 `/actual/` stays here for the quote demo. Do not edit `public/actual/` by hand; refresh it with
 `tools/sync-actual.sh /path/to/pcaq-viewer` (records the source commit in `public/actual/SOURCE.txt`).
-Leaf Tender links inside `/actual/` point at leaftender.chriscouch.net (cross-origin overlay needs a session there).
 
 ## Data and vendored libraries
 - `public/data/`: copied from rfq-ontology `ff69572` (ontology/*.ttl, data/*.ttl, shapes, queries/*.rq) plus
@@ -62,6 +63,13 @@ python tools/precompute.py ../rfq-ontology                     # regenerate repl
 ROBOT_JAR=robot.jar python tools/precompute_reasoner.py ../rfq-ontology   # regenerate replayed HermiT result (Java)
 python tools/e2e.py http://127.0.0.1:8000/ shots               # headless end-to-end test (playwright)
 ```
+
+
+## Related repositories
+- [supergus/rfq-ontology](https://github.com/supergus/rfq-ontology) — tutorial OWL ontology for the RFQ-to-quote process (vocabulary this demo loads).
+- [supergus/rfq-agents](https://github.com/supergus/rfq-agents) — PLA orchestrator and tools; pins rfq-ontology via `ontology.lock`.
+- This repo (`rfq-demo`) — live management console / quote demo at https://pla.chriscouch.net.
+- Leaf Tender is a separate ontology management project hosted at https://leaftender.chriscouch.net (not part of this RFQ demo trio).
 
 ## Process
 `main` is protected: changes go through a PR and need the "Grok Bot QC" status.
