@@ -90,7 +90,7 @@ const STEPS = [
         out.push({ bomLine: b.id, matchedEntry: b.entry, similarityScore: b.score, similarityMethod: b.method, confidence: b.confidence, manualOverride: !!b.override, ...(b.override ? { overrideUnitCost: b.unitCost } : {}) });
       }
       raiseIssue({ id: "LOWCONF-BL-5", title: "BL-5 priced by manual override", detail: "No library entry for the serial-number label. Override unit cost $0.25 recorded with confidence low (CQ7 manual review).", owner: "PLA", kind: "note", resolved: true, resolution: "Accepted: override recorded as a fact" });
-      return { similarityMatch: sm, matches: out, note: live ? "RFQ-line match from the live model; BOM-line matches are scripted." : "Scripted fallback: the RFQ-line match values are read live (SPARQL, CQ12) from data/pla-run-1002.ttl in rfq-ontology." };
+      return { similarityMatch: sm, matches: out, note: live ? "RFQ-line match from the live model; BOM-line matches are scripted." : "Scripted fallback: the RFQ-line match values are read live (SPARQL, CQ12) from data/pla-run-1002.ttl in the ontology." };
     } },
   { stage: "cost", tool: "explode_bom", input: () => ({ bom: "ex:BOM-BRK-100", quoteDate: MODEL.quoteDate }),
     run: () => {

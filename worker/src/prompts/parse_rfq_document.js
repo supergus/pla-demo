@@ -1,4 +1,4 @@
-// Prompt for parse_rfq_document (owner: T800). Field names mirror rfq-agents PARSE_SCHEMA.
+// Prompt for parse_rfq_document (owner: T800). Field names mirror pla-agents PARSE_SCHEMA.
 export const INCOTERMS = ["EXW", "FCA", "FOB", "CIF", "DAP", "DDP"];
 export const FIELDS = ["customer", "payment_terms", "incoterm", "delivery_date", "drawing", "material_spec", "finish_spec"];
 

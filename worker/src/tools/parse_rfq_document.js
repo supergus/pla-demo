@@ -1,4 +1,4 @@
-// parse_rfq_document (owner: T800). Input: RFQ text (string or {text}). Output mirrors rfq-agents PARSE_SCHEMA
+// parse_rfq_document (owner: T800). Input: RFQ text (string or {text}). Output mirrors pla-agents PARSE_SCHEMA
 // plus `found`/`inferred`, `missing_fields`, `ambiguities`, `low_confidence`. Throws (=> workflow retry) on invalid output.
 import * as P from "../prompts/parse_rfq_document.js";
 
