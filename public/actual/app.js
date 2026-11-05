@@ -81,8 +81,29 @@ function showDetail(iri) {
   $("d-graph").onclick = () => { tab("graph"); addNode(iri); expand(iri); };
 }
 
-// ---------- graph ----------
-const COLORS = { class: "#6e7fd6", PartLine: "#4da3ff", CostElement: "#3fb27f", SellingPrice: "#f08b5a", LTA: "#e0a63a", estimate: "#d46ee8", Interco: "#2ec4b6", Margin: "#ff6b9d", other: "#8593a3", lit: "#2a3340" };
+// ---------- graph (single style source → network + legend) ----------
+const GRAPH_STYLE = {
+  nodeDefaults: { shape: "box", font: { color: "#0b0f14", size: 11 }, margin: 6, borderWidth: 0 },
+  edgeDefaults: { arrows: "to", font: { size: 9, color: "#8593a3", strokeWidth: 0 }, color: "#3a4553", smooth: { type: "dynamic" } },
+  // groups: color + shape drive both vis nodes and the left-pane legend
+  groups: {
+    class:      { color: "#6e7fd6", shape: "ellipse", legend: "OWL class" },
+    PartLine:   { color: "#4da3ff", shape: "box",     legend: "Part line" },
+    CostElement:{ color: "#3fb27f", shape: "box",     legend: "Cost element / breakdown" },
+    SellingPrice:{ color: "#f08b5a", shape: "box",    legend: "Selling price" },
+    LTA:        { color: "#e0a63a", shape: "box",     legend: "LTA schedule / step" },
+    estimate:   { color: "#d46ee8", shape: "box",     legend: "Imported estimate (prov)" },
+    Interco:    { color: "#2ec4b6", shape: "box",     legend: "Interco transfer / plant" },
+    Margin:     { color: "#ff6b9d", shape: "box",     legend: "Margin view" },
+    other:      { color: "#8593a3", shape: "box",     legend: "Other individual" },
+    lit:        { color: "#2a3340", shape: "text",    legend: "Literal value", fontColor: "#c8d2de" },
+  },
+  edges: {
+    property:  { color: "#3a4553", dashes: false, legend: "Property edge" },
+    subclass:  { color: "#3a4553", dashes: true,  legend: "subClassOf" },
+  },
+};
+const COLORS = Object.fromEntries(Object.entries(GRAPH_STYLE.groups).map(([k, v]) => [k, v.color]));
 function groupOf(iri) {
   if (select(`ASK { <${iri}> a owl:Class }`).ask) return "class";
   const t = (c) => select(`ASK { <${iri}> a/rdfs:subClassOf* ${c} }`).ask;
@@ -92,25 +113,44 @@ function groupOf(iri) {
   if (t("pcaq:MarginView") || t("pcaq:FinishedGoodsMargin") || t("pcaq:IntercompanyMargin") || t("pcaq:TotalCompanyMargin")) return "Margin";
   if (t("prov:Entity")) return "estimate"; return "other";
 }
+function renderLegend() {
+  const el = $("graph-legend"); if (!el) return;
+  const rows = Object.values(GRAPH_STYLE.groups).map((g) => {
+    if (g.shape === "text") return `<div class="legend-row"><span class="legend-swatch shape-text" style="color:${g.fontColor || "#c8d2de"}">Aa</span><span>${esc(g.legend)}</span></div>`;
+    const shapeCls = g.shape === "ellipse" ? " shape-ellipse" : "";
+    return `<div class="legend-row"><span class="legend-swatch${shapeCls}" style="background:${g.color}"></span><span>${esc(g.legend)}</span></div>`;
+  }).join("");
+  const edges = Object.values(GRAPH_STYLE.edges).map((e) =>
+    `<div class="legend-row"><span class="legend-edge${e.dashes ? " dashed" : ""}" style="border-top-color:${e.color}"></span><span>${esc(e.legend)}</span></div>`).join("");
+  el.innerHTML = `<h3>Graph key</h3><div class="legend-section">${rows}</div><div class="legend-section">${edges}</div>`;
+}
 function ensureNet() {
   if (net) return;
   nodes = new vis.DataSet(); edges = new vis.DataSet();
   net = new vis.Network($("graph"), { nodes, edges }, {
-    nodes: { shape: "box", font: { color: "#0b0f14", size: 11 }, margin: 6, borderWidth: 0 },
-    edges: { arrows: "to", font: { size: 9, color: "#8593a3", strokeWidth: 0 }, color: "#3a4553", smooth: { type: "dynamic" } },
+    nodes: { ...GRAPH_STYLE.nodeDefaults },
+    edges: { ...GRAPH_STYLE.edgeDefaults },
     physics: { solver: "forceAtlas2Based", forceAtlas2Based: { gravitationalConstant: -70, springLength: 110 }, stabilization: { iterations: 100 } },
     interaction: { hover: true } });
   net.on("stabilizationIterationsDone", () => net.fit());
   net.on("click", (p) => { const id = p.nodes[0]; if (id && !id.startsWith("lit:")) showDetail(id); });
   net.on("doubleClick", (p) => { const id = p.nodes[0]; if (id && !id.startsWith("lit:")) expand(id); });
 }
-function addNode(iri) { ensureNet(); if (!nodes.get(iri)) { const g = groupOf(iri); nodes.add({ id: iri, label: label(iri), title: short(iri), color: { background: COLORS[g] }, ...(g === "class" ? { shape: "ellipse" } : {}) }); } }
-function addEdge(s, p, o) { const id = s + "|" + p + "|" + o; if (!edges.get(id)) edges.add({ id, from: s, to: o, label: short(p).replace(/^\w+:/, "") }); }
+function addNode(iri) {
+  ensureNet(); if (nodes.get(iri)) return;
+  const g = groupOf(iri); const st = GRAPH_STYLE.groups[g] || GRAPH_STYLE.groups.other;
+  nodes.add({ id: iri, label: label(iri), title: short(iri), color: { background: st.color }, shape: st.shape });
+}
+function addEdge(s, p, o, kind = "property") {
+  const id = s + "|" + p + "|" + o; if (edges.get(id)) return;
+  const st = GRAPH_STYLE.edges[kind] || GRAPH_STYLE.edges.property;
+  edges.add({ id, from: s, to: o, label: short(p).replace(/^\w+:/, ""), color: st.color, dashes: st.dashes });
+}
 function expand(iri) {
   addNode(iri);
   for (const r of select(`SELECT ?p ?o WHERE { <${iri}> ?p ?o FILTER(?p NOT IN (rdfs:label, rdfs:comment, pcaq:sourceColumn, pcaq:sourceSheet, pcaq:openQuestion, pcaq:populationMode, owl:equivalentClass)) } LIMIT 80`).rows) {
     if (r.o.termType === "NamedNode") { if (r.o.value === PFX.owl + "Class") continue; addNode(r.o.value); addEdge(iri, r.p.value, r.o.value); }
-    else if (r.o.termType === "Literal") { const id = "lit:" + iri + r.p.value + r.o.value; if (!nodes.get(id)) nodes.add({ id, label: r.o.value.slice(0, 30), shape: "text", font: { color: "#c8d2de", size: 10 } }); addEdge(iri, r.p.value, id); }
+    else if (r.o.termType === "Literal") { const id = "lit:" + iri + r.p.value + r.o.value; const lit = GRAPH_STYLE.groups.lit; if (!nodes.get(id)) nodes.add({ id, label: r.o.value.slice(0, 30), shape: lit.shape, font: { color: lit.fontColor || "#c8d2de", size: 10 }, color: { background: lit.color } }); addEdge(iri, r.p.value, id); }
   }
   for (const r of select(`SELECT ?s ?p WHERE { ?s ?p <${iri}> FILTER(?p != rdf:type || !EXISTS { <${iri}> a owl:Class }) } LIMIT 40`).rows)
     if (r.s.termType === "NamedNode") { addNode(r.s.value); addEdge(r.s.value, r.p.value, iri); }
@@ -118,7 +158,7 @@ function expand(iri) {
 function schemaGraph() {
   ensureNet(); nodes.clear(); edges.clear();
   for (const r of select(`SELECT ?c ?p WHERE { ?c a owl:Class FILTER isIRI(?c) OPTIONAL { ?c rdfs:subClassOf ?p FILTER(isIRI(?p) && STRSTARTS(STR(?p), "${PFX.pcaq}")) } }`).rows) {
-    addNode(r.c.value); if (r.p) { addNode(r.p.value); edges.update({ id: r.c.value + "|sub|" + r.p.value, from: r.c.value, to: r.p.value, dashes: true, label: "subClassOf" }); } }
+    addNode(r.c.value); if (r.p) { addNode(r.p.value); const st = GRAPH_STYLE.edges.subclass; edges.update({ id: r.c.value + "|sub|" + r.p.value, from: r.c.value, to: r.p.value, dashes: st.dashes, color: st.color, label: "subClassOf" }); } }
   for (const r of select(`SELECT ?p ?d ?r WHERE { ?p a owl:ObjectProperty ; rdfs:domain ?d ; rdfs:range ?r FILTER(STRSTARTS(STR(?r), "${PFX.pcaq}")) }`).rows) { addNode(r.d.value); addNode(r.r.value); addEdge(r.d.value, r.p.value, r.r.value); }
   net.fit();
 }
@@ -176,6 +216,26 @@ async function validate() {
     `<p class="muted">Line P-005 is incomplete on purpose so the shapes have something to report.</p>`;
 }
 
+// ---------- right pane collapse (localStorage) ----------
+const RIGHT_KEY = "pcaq-viewer-right-collapsed";
+function setRightCollapsed(collapsed) {
+  document.querySelector("main").classList.toggle("right-collapsed", collapsed);
+  const btn = $("right-toggle");
+  btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  btn.title = collapsed ? "Expand detail pane" : "Collapse detail pane";
+  btn.setAttribute("aria-label", btn.title);
+  btn.textContent = collapsed ? "⟨" : "⟩";
+  try { localStorage.setItem(RIGHT_KEY, collapsed ? "1" : "0"); } catch (_) {}
+  if (net) { requestAnimationFrame(() => { net.redraw(); try { net.fit(); } catch (_) {} }); }
+}
+function initRightPane() {
+  let collapsed = false;
+  try { collapsed = localStorage.getItem(RIGHT_KEY) === "1"; } catch (_) {}
+  setRightCollapsed(collapsed);
+  $("right-toggle").onclick = () => setRightCollapsed(!document.querySelector("main").classList.contains("right-collapsed"));
+  $("right-toggle").onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("right-toggle").click(); } };
+}
+
 // ---------- wiring ----------
 function tab(name) { document.querySelectorAll(".tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === name)); document.querySelectorAll(".tab").forEach((t) => (t.hidden = t.id !== "tab-" + name)); if (name === "graph" && net) net.redraw(); }
 document.addEventListener("click", (e) => { const el = e.target.closest("[data-iri]"); if (el) showDetail(el.dataset.iri); });
@@ -200,6 +260,6 @@ $("file").onchange = async (e) => { for (const f of e.target.files) extra.push({
     queries = await Promise.all(names.map(async (n) => { const t = await fetchText("queries/" + n); return { n, text: t, title: t.split("\n")[0].replace(/^#\s*/, "") }; }));
     $("q-pick").innerHTML = queries.map((q, i) => `<option value="${i}">${esc(q.title)}</option>`).join("");
     $("q-text").value = queries[0]?.text || "";
-    buildStore(); spineGraph();
+    buildStore(); renderLegend(); initRightPane(); spineGraph();
   } catch (e) { $("stats").innerHTML = `<span class="err">Load failed: ${esc(e.message)}. Serve this folder over http (./serve.sh), not file://</span>`; }
 })();
