@@ -1,5 +1,8 @@
 # pla-demo: PLA management console (v2)
 
+**Repo map for auditors:** [REPO-GUIDE.md](REPO-GUIDE.md) — every tracked file and how pla.chriscouch.net is served.
+
+
 A live management console for one **Program Lifecycle Agent (PLA)** run on a sample RFQ, built on the
 tutorial OWL ontology in [supergus/pla-agents/ontology](https://github.com/supergus/pla-agents/tree/main/ontology).
 Site files live in [`public/`](public/) (Cloudflare Pages output dir; Pages project name still `rfq-demo`).
